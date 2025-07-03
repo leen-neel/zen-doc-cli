@@ -1,0 +1,22 @@
+{
+  "name": "zen-doc",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "mycli": "mycli Neel"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/yargs": "^17.0.33"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "bin": {
+    "mycli": "./index.ts"
+  },
+  "dependencies": {
+    "yargs": "^18.0.0"
+  }
+}
