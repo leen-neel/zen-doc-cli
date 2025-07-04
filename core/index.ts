@@ -1,5 +1,5 @@
-import { readCodebase, categorizeFiles } from "./fileRead.js";
-import { generateDocumentation } from "./docGenerator.js";
-import { generateConfig } from "./genConfig.js";
+import { readCodebase, categorizeFiles } from "./fileRead.ts";
+import { generateDocs } from "./generateDocs.ts";
+import { generateConfig } from "./genConfig.ts";
 
-export { readCodebase, categorizeFiles, generateDocumentation, generateConfig };
+export { readCodebase, categorizeFiles, generateDocs, generateConfig };

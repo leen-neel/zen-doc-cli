@@ -1,16 +1,17 @@
 {
   "name": "zen-doc",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "A documentation generation tool",
   "main": "index.ts",
   "module": "index.ts",
-  "type": "module",
-  "private": true,
-  "scripts": {
-    "dev": "bun index.ts"
+  "exports": {
+    ".": "./index.ts"
   },
+  "type": "module",
   "files": [
+    "index.js",
     "index.ts",
+    "core/**/*.ts",
     "README.md"
   ],
   "keywords": [
@@ -19,7 +20,7 @@
     "cli",
     "markdown"
   ],
-  "author": "",
+  "author": "ZenDoc",
   "license": "MIT",
   "devDependencies": {
     "@types/bun": "latest",
@@ -28,22 +29,30 @@
   "peerDependencies": {
     "typescript": "^5"
   },
+  "overrides": {
+    "tsx": "^4.0.0"
+  },
   "bin": {
-    "zen-doc": "./index.ts"
+    "zen-doc": "./index.js"
   },
   "dependencies": {
+    "@ai-sdk/google": "^1.2.22",
     "@types/glob": "^9.0.0",
+    "@types/prompts": "^2.4.9",
     "@typescript-eslint/parser": "^8.35.1",
     "ai": "^4.3.16",
+    "chalk": "^5.4.1",
     "glob": "^11.0.3",
     "jsonc-parser": "^3.3.1",
+    "prompts": "^2.4.2",
     "tsx": "^4.0.0",
     "yaml": "^2.8.0",
-    "yargs": "^18.0.0",
-    "@types/prompts": "^2.4.9",
-    "prompts": "^2.4.2"
+    "yargs": "^18.0.0"
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "scripts": {
+    "prepare": "echo 'Package prepared for distribution'"
   }
 }

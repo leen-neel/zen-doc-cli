@@ -1,4 +1,4 @@
-#!/usr/bin/env tsx
+#!/usr/bin/env ts-node
 
 import yargs from "yargs/yargs";
 import { hideBin } from "yargs/helpers";
@@ -6,9 +6,9 @@ import { hideBin } from "yargs/helpers";
 import {
   readCodebase,
   categorizeFiles,
-  generateDocumentation,
+  generateDocs,
   generateConfig,
-} from "@/core";
+} from "./core";
 
 const argv = typeof Bun !== "undefined" ? Bun.argv : process.argv;
 
@@ -20,17 +20,10 @@ yargs(hideBin(argv))
     "generate",
     "Generate documentation",
     (yargs) => {
-      return yargs.option("output", {
-        alias: "o",
-        type: "string",
-        description: "Output directory for generated documentation",
-        default: "./docs",
-      });
+      return yargs;
     },
     async (argv) => {
       console.log(`Reading codebase from current directory...`);
-      console.log(`Output format: ${argv.format}`);
-      console.log(`Output directory: ${argv.output}`);
 
       try {
         // Step 1: Read all files
@@ -52,11 +45,9 @@ yargs(hideBin(argv))
           console.log(`  - ${category}: ${count} files`);
         });
 
-        // Step 3: Print file contents
-        console.log(`\nPrinting file contents...`);
-        await generateDocumentation(fileInfos, argv.output);
-
-        console.log(`\n✅ File contents printed successfully!`);
+        // Step 3: Generate documentation
+        console.log(`\nGenerating documentation...`);
+        await generateDocs(fileInfos);
       } catch (error) {
         console.error("Error processing files:", error);
         process.exit(1);
