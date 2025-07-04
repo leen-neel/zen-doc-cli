@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "mycli": "mycli Neel"
+    "dev": "bun index.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -13,10 +13,12 @@
   "peerDependencies": {
     "typescript": "^5"
   },
-  "bin": {
-    "mycli": "./index.ts"
+ "bin": {
+    "zen-doc": "./index.ts"
   },
   "dependencies": {
+    "@types/prompts": "^2.4.9",
+    "prompts": "^2.4.2",
     "yargs": "^18.0.0"
   }
 }
