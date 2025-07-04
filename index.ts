@@ -3,11 +3,13 @@
 import yargs from "yargs/yargs";
 import { hideBin } from "yargs/helpers";
 
-import { readCodebase, categorizeFiles } from "./utils/fileRead.js";
-import { generateDocumentation } from "./utils/docGenerator.js";
-import { generateConfig } from "./utils/genConfig.js";
+import {
+  readCodebase,
+  categorizeFiles,
+  generateDocumentation,
+  generateConfig,
+} from "@/utils";
 
-// Use Bun.argv if available (Bun), otherwise use process.argv (Node.js)
 const argv = typeof Bun !== "undefined" ? Bun.argv : process.argv;
 
 yargs(hideBin(argv))
