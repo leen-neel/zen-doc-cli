@@ -8,7 +8,7 @@ import {
   categorizeFiles,
   generateDocumentation,
   generateConfig,
-} from "@/utils";
+} from "@/core";
 
 const argv = typeof Bun !== "undefined" ? Bun.argv : process.argv;
 
