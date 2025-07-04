@@ -16,7 +16,7 @@
     "cli",
     "markdown"
   ],
-  "author": "",
+  "author": "ZenDoc",
   "license": "MIT",
   "devDependencies": {
     "@types/bun": "latest",
