@@ -1,4 +1,4 @@
-#!/usr/bin/env tsx
+#!/usr/bin/env ts-node
 
 import yargs from "yargs/yargs";
 import { hideBin } from "yargs/helpers";
@@ -8,7 +8,7 @@ import {
   categorizeFiles,
   generateDocs,
   generateConfig,
-} from "./core/index.js";
+} from "./core";
 
 const argv = typeof Bun !== "undefined" ? Bun.argv : process.argv;
 

@@ -2,20 +2,20 @@ import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
-import type { FileInfo } from "./fileRead.js";
+import type { FileInfo } from "./fileRead.ts";
 import chalk from "chalk";
 
 // Import from modular files
-import { getCategoryPrompt } from "./prompts.js";
-import { addFrontmatter, generateDocStructure } from "./contentProcessing.js";
-import { groupFilesByCategory, getUniqueFileName } from "./fileUtils.js";
-import { generateIndexMdx } from "./indexGenerator.js";
+import { getCategoryPrompt } from "./prompts.ts";
+import { addFrontmatter, generateDocStructure } from "./contentProcessing.ts";
+import { groupFilesByCategory, getUniqueFileName } from "./fileUtils.ts";
+import { generateIndexMdx } from "./indexGenerator.ts";
 import {
   createAstroProject,
   generateAstroConfig,
   moveContentToAstroProject,
   generateCategoryIndexes,
-} from "./astroGenerator.js";
+} from "./astroGenerator.ts";
 
 // Load config function
 async function loadConfig() {

@@ -1,6 +1,6 @@
-import { icons } from "./icons.js";
-import type { FileInfo } from "./fileRead.js";
-import { getCategoryTitle, getCategoryDescription } from "./fileUtils.js";
+import { icons } from "./icons.ts";
+import type { FileInfo } from "./fileRead.ts";
+import { getCategoryTitle, getCategoryDescription } from "./fileUtils.ts";
 
 export function generateIndexMdx(
   groupedFiles: Record<string, FileInfo[]>,

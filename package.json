@@ -1,13 +1,17 @@
 {
   "name": "zen-doc",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "A documentation generation tool",
   "main": "index.ts",
   "module": "index.ts",
+  "exports": {
+    ".": "./index.ts"
+  },
   "type": "module",
-  "private": true,
   "files": [
+    "index.js",
     "index.ts",
+    "core/**/*.ts",
     "README.md"
   ],
   "keywords": [
@@ -25,8 +29,11 @@
   "peerDependencies": {
     "typescript": "^5"
   },
+  "overrides": {
+    "tsx": "^4.0.0"
+  },
   "bin": {
-    "zen-doc": "./index.ts"
+    "zen-doc": "./index.js"
   },
   "dependencies": {
     "@ai-sdk/google": "^1.2.22",
@@ -44,5 +51,8 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "scripts": {
+    "prepare": "echo 'Package prepared for distribution'"
   }
 }

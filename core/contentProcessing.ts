@@ -1,4 +1,4 @@
-import type { FileInfo } from "./fileRead.js";
+import type { FileInfo } from "./fileRead.ts";
 
 export function addFrontmatter(
   content: string,
