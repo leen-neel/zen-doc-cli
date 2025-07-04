@@ -1,11 +1,25 @@
 {
   "name": "zen-doc",
+  "version": "1.0.0",
+  "description": "A documentation generation tool",
+  "main": "index.ts",
   "module": "index.ts",
   "type": "module",
-  "private": true,
-  "scripts": {
-    "mycli": "mycli Neel"
+  "bin": {
+    "zen-doc": "./index.ts"
   },
+  "files": [
+    "index.ts",
+    "README.md"
+  ],
+  "keywords": [
+    "documentation",
+    "generator",
+    "cli",
+    "markdown"
+  ],
+  "author": "",
+  "license": "MIT",
   "devDependencies": {
     "@types/bun": "latest",
     "@types/yargs": "^17.0.33"
@@ -13,10 +27,17 @@
   "peerDependencies": {
     "typescript": "^5"
   },
-  "bin": {
-    "mycli": "./index.ts"
-  },
   "dependencies": {
+    "@types/glob": "^9.0.0",
+    "@typescript-eslint/parser": "^8.35.1",
+    "ai": "^4.3.16",
+    "glob": "^11.0.3",
+    "jsonc-parser": "^3.3.1",
+    "tsx": "^4.0.0",
+    "yaml": "^2.8.0",
     "yargs": "^18.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
