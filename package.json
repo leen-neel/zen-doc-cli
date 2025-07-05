@@ -1,6 +1,6 @@
 {
   "name": "zen-doc",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Your codebase documentation, in a matter of minutes",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -50,6 +50,6 @@
   },
   "scripts": {
     "prepare": "echo 'Package prepared for distribution'",
-    "build": "tsc"
+    "build": "tsc && node -e \"const fs=require('fs');const content=fs.readFileSync('dist/index.js','utf8');fs.writeFileSync('dist/index.js','#!/usr/bin/env node\\n'+content);\""
   }
 }
