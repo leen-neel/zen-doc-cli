@@ -1,5 +1,7 @@
-import { writeFile, mkdir } from "fs/promises";
+import { writeFile, mkdir, readFile } from "fs/promises";
 import { join } from "path";
+import { existsSync } from "fs";
+import { fileURLToPath, pathToFileURL } from "url";
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import type { FileInfo } from "./fileRead.js";
@@ -20,16 +22,83 @@ import {
 // Load config function
 async function loadConfig() {
   try {
-    // Look for config in the current working directory (project root)
-    const configPath = join(process.cwd(), "zen.config.mjs");
-    const config = (await import(configPath)).default;
+    // Try relative path first (more reliable on Windows)
+    let relativeConfigPath = "./zen.config.mjs";
+
+    if (process.platform === "win32") {
+      relativeConfigPath = ".\\zen.config.mjs";
+    }
+
+    const absoluteConfigPath = join(process.cwd(), "zen.config.mjs");
+
+    let configPath = relativeConfigPath;
+    let config;
+
+    // Check if relative path exists
+    if (existsSync(relativeConfigPath)) {
+      console.log(
+        chalk.gray(
+          `📁 Loading config from relative path: ${relativeConfigPath}`
+        )
+      );
+      try {
+        config = (await import(relativeConfigPath)).default;
+      } catch (relativeError) {
+        console.log(
+          chalk.yellow(`⚠️  Relative path failed, trying absolute path...`)
+        );
+        configPath = absoluteConfigPath;
+        // Convert absolute path to file URL for Windows compatibility
+        const fileUrl = pathToFileURL(absoluteConfigPath).href;
+        config = (await import(fileUrl)).default;
+      }
+    } else if (existsSync(absoluteConfigPath)) {
+      console.log(
+        chalk.gray(
+          `📁 Loading config from absolute path: ${absoluteConfigPath}`
+        )
+      );
+      configPath = absoluteConfigPath;
+      // Convert absolute path to file URL for Windows compatibility
+      const fileUrl = pathToFileURL(absoluteConfigPath).href;
+      config = (await import(fileUrl)).default;
+    } else {
+      console.error(chalk.red(`❌ Error: zen.config.mjs not found at:`));
+      console.error(chalk.gray(`   Relative: ${relativeConfigPath}`));
+      console.error(chalk.gray(`   Absolute: ${absoluteConfigPath}`));
+      console.error(
+        chalk.yellow(
+          "Please run 'zen-doc init' to create a configuration file."
+        )
+      );
+      process.exit(1);
+    }
+
+    if (!config) {
+      throw new Error("Config file exists but has no default export");
+    }
+
+    console.log(
+      chalk.green(`✅ Config loaded successfully from: ${configPath}`)
+    );
     return config;
   } catch (error) {
+    console.error(chalk.red(`❌ Error loading zen.config.mjs: ${error}`));
     console.error(
-      chalk.red("❌ Error: zen.config.mjs not found in project root!")
+      chalk.yellow(
+        "Please ensure the config file exists and has a valid default export."
+      )
     );
+    console.error(chalk.gray("Example config structure:"));
     console.error(
-      chalk.yellow("Please run 'zen-doc init' to create a configuration file.")
+      chalk.gray(`
+    export default {
+      projectName: "Your Project",
+      outputDir: "docs",
+      apiKey: "your-api-key",
+      author: "Your Name"
+    };
+          `)
     );
     process.exit(1);
   }
