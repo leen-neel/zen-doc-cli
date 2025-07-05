@@ -1,8 +1,8 @@
-import type { FileInfo } from "./fileRead.ts";
+import type { FileInfo } from "./fileRead.js";
 import {
   getRouteFromPath,
   getHttpMethodFromFile,
-} from "./contentProcessing.ts";
+} from "./contentProcessing.js";
 
 export function groupFilesByCategory(
   fileInfos: FileInfo[]
@@ -32,11 +32,11 @@ export function getUniqueFileName(file: FileInfo, category: string): string {
 
     if (routePath && httpMethod) {
       const actionName = getActionFromRoute(routePath, httpMethod);
-      return `${httpMethod}-${actionName}.md`;
+      return `${httpMethod}-${actionName}.md`.toLowerCase();
     }
 
     // Fallback: use baseName with api suffix
-    return `${processedBaseName}-api.md`;
+    return `${processedBaseName}-api.md`.toLowerCase();
   }
 
   // For pages, create descriptive names based on directory structure
@@ -47,23 +47,23 @@ export function getUniqueFileName(file: FileInfo, category: string): string {
         .replace(/[^a-zA-Z0-9]/g, "-")
         .replace(/-+/g, "-")
         .replace(/^-|-$/g, "");
-      return `${cleanPath}-page.md`;
+      return `${cleanPath}-page.md`.toLowerCase();
     }
-    return `${processedBaseName}-page.md`;
+    return `${processedBaseName}-page.md`.toLowerCase();
   }
 
   // For components, add component prefix
   if (category === "components") {
-    return `${processedBaseName}-component.md`;
+    return `${processedBaseName}-component.md`.toLowerCase();
   }
 
   // For lib/utilities, add utility prefix
   if (category === "lib") {
-    return `${processedBaseName}-utility.md`;
+    return `${processedBaseName}-utility.md`.toLowerCase();
   }
 
   // Default fallback
-  return `${processedBaseName}.md`;
+  return `${processedBaseName}.md`.toLowerCase();
 }
 
 export function getActionFromRoute(routePath: string, method: string): string {

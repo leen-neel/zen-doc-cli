@@ -39,6 +39,6 @@ export const generateConfig = async () => {
   ]);
 
   const config = `export default ${JSON.stringify(response, null, 2)};\n`;
-  writeFileSync("zen.config.js", config);
-  console.log("✅ zen.config.js created successfully!");
+  writeFileSync("zen.config.mjs", config);
+  console.log("✅ zen.config.mjs created successfully!");
 };

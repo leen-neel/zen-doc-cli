@@ -1,8 +1,8 @@
+# ZenDoc - Code Documentation in Minutes
+
 <p align="center">
   <img src="/assets/cover.jpeg" width="200" alt="Zen Doc Logo" />
 </p>
-
-<h1 align="center">🧘‍♀️ ZenDoc — AI-powered Documentation CLI</h1>
 
 <p align="center">
   <strong>Auto-generate full documentation sites from your codebase using AI + Astro + Lingo.dev — all with a single command.</strong>
@@ -19,7 +19,7 @@
 ## ✨ Features
 
 - 🛠 One-command setup: `npx zen-doc generate`
-- 🧠 AI-generated docs from components, utils, APIs (Google Gemini)
+- 🧠 AI-generated docs from components, utils, APIs (using Google Gemini)
 - 🌐 Optional translation via Lingo.dev
 - ⚡ Astro-powered static Markdown documentation
 - 🔐 Credit system w/ Stripe + Autumn (useautumn.com)
@@ -33,20 +33,15 @@
 
 ```bash
 npx zen-doc init
-
-```
-
-## Then
-```bash
 npx zen-doc generate
-
 ```
+
 ✅ A full documentation site will be created in the /docs folder.
 
-
 ### 📦 Development Setup
+
 ```bash
-git clone https://github.com/your-username/zen-doc.git
+git clone https://github.com/leen-neel/zen-doc.git
 cd zen-doc
 bun install
 bun link

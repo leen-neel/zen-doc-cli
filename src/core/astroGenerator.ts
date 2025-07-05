@@ -1,27 +1,60 @@
-import { writeFile, mkdir, copyFile } from "fs/promises";
+import { writeFile, copyFile, mkdir } from "fs/promises";
+import { existsSync } from "fs";
 import { join } from "path";
 import { execSync } from "child_process";
 import chalk from "chalk";
-import type { FileInfo } from "./fileRead.ts";
-import { getCategoryTitle } from "./fileUtils.ts";
+import type { FileInfo } from "./fileRead.js";
+import {
+  getCategoryTitle,
+  getActionFromRoute,
+  getUniqueFileName,
+} from "./fileUtils.js";
+import {
+  getRouteFromPath,
+  getHttpMethodFromFile,
+} from "./contentProcessing.js";
 
 export async function createAstroProject(
   outputDir: string,
   config: any
 ): Promise<void> {
-  try {
-    // Check if Astro project already exists
-    const packageJsonPath = join(outputDir, "package.json");
-    const packageJson = await import(packageJsonPath).catch(() => null);
+  console.log(chalk.cyan(`🔍 Checking Astro project at: ${outputDir}`));
 
-    if (packageJson) {
+  try {
+    // Check if Astro project already exists by looking for package.json and astro.config.mjs
+    const packageJsonPath = join(outputDir, "package.json");
+    const astroConfigPath = join(outputDir, "astro.config.mjs");
+
+    const hasPackageJson = existsSync(packageJsonPath);
+    const hasAstroConfig = existsSync(astroConfigPath);
+
+    console.log(chalk.gray(`   Has package.json: ${hasPackageJson}`));
+    console.log(chalk.gray(`   Has astro.config.mjs: ${hasAstroConfig}`));
+
+    if (hasPackageJson && hasAstroConfig) {
       console.log(
-        chalk.blue("📁 Astro project already exists, skipping creation")
+        chalk.blue("📁 Astro project already exists, using existing project")
       );
       return;
     }
 
-    console.log(chalk.cyan("🚀 Creating new Astro project with Starlight..."));
+    // If directory exists but doesn't have Astro files, warn user
+    if (existsSync(outputDir) && !hasPackageJson) {
+      console.log(
+        chalk.yellow(
+          `⚠️  Directory ${outputDir} exists but is not an Astro project`
+        )
+      );
+      console.log(
+        chalk.yellow("Creating new Astro project in this directory...")
+      );
+    }
+
+    console.log(
+      chalk.cyan(
+        `🚀 Creating new Astro project with Starlight in ${outputDir}...`
+      )
+    );
 
     // Create Astro project with Starlight template
     execSync(
@@ -54,22 +87,8 @@ export default defineConfig({
     starlight({
       title: '${config.projectName}',
       description: '${config.description || "Project documentation"}',
-      author: '${config.author}',
       favicon: '/favicon.svg',
-      logo: {
-        src: './src/assets/logo.svg',
-        alt: '${config.projectName} logo',
-      },
-      social: {
-        github: '${config.github || ""}',
-      },
       sidebar: ${JSON.stringify(sidebarConfig, null, 2)},
-      components: {
-        PageTitle: './src/components/PageTitle.astro',
-      },
-      customCss: [
-        './src/styles/custom.css',
-      ],
     }),
   ],
   server: {
@@ -85,15 +104,7 @@ export default defineConfig({
 export function generateSidebarConfig(
   grouped: Record<string, FileInfo[]>
 ): any[] {
-  const sidebar: any[] = [
-    {
-      label: "Getting Started",
-      items: [
-        { label: "Introduction", link: "/" },
-        { label: "Quick Start", link: "/quickstart/" },
-      ],
-    },
-  ];
+  const sidebar: any[] = [];
 
   // Add category sections
   for (const [category, files] of Object.entries(grouped)) {
@@ -101,10 +112,15 @@ export function generateSidebarConfig(
 
     const categoryTitle = getCategoryTitle(category);
     const categoryItems = files.map((file) => {
-      const fileName = file.fileName.replace(/\.[^/.]+$/, "");
+      // Get the actual filename without extension (this matches what getUniqueFileName produces)
+      const actualFileName = getUniqueFileName(file, category).replace(
+        /\.md$/,
+        ""
+      );
+
       return {
-        label: fileName,
-        link: `/${category}/${fileName}/`,
+        label: file.fileName.replace(/\.[^/.]+$/, ""), // Original filename for display
+        slug: `${category}/${actualFileName}`,
       };
     });
 
@@ -114,15 +130,6 @@ export function generateSidebarConfig(
     });
   }
 
-  // Add reference section
-  sidebar.push({
-    label: "Reference",
-    items: [
-      { label: "API Reference", link: "/api-reference/" },
-      { label: "Configuration", link: "/configuration/" },
-    ],
-  });
-
   return sidebar;
 }
 
@@ -131,14 +138,45 @@ export async function moveContentToAstroProject(
   outputDir: string
 ): Promise<void> {
   console.log(chalk.cyan("📦 Moving generated content to Astro project..."));
+  console.log(chalk.gray(`   Temp directory: ${tempDir}`));
+  console.log(chalk.gray(`   Output directory: ${outputDir}`));
 
   try {
-    // Copy content directory
+    // Check if temp directory exists
+    if (!existsSync(tempDir)) {
+      console.error(chalk.red(`❌ Temp directory does not exist: ${tempDir}`));
+      process.exit(1);
+    }
+
+    // Copy content directory - Starlight uses src/content/docs
     const sourceContentDir = join(tempDir, "content");
     const targetContentDir = join(outputDir, "src/content/docs");
 
-    // Use cp command for better cross-platform compatibility
-    execSync(`cp -r "${sourceContentDir}" "${targetContentDir}"`, {
+    console.log(chalk.gray(`   Source content dir: ${sourceContentDir}`));
+    console.log(chalk.gray(`   Target content dir: ${targetContentDir}`));
+
+    // Check if source content exists
+    if (!existsSync(sourceContentDir)) {
+      console.error(
+        chalk.red(
+          `❌ Source content directory does not exist: ${sourceContentDir}`
+        )
+      );
+      process.exit(1);
+    }
+
+    // Delete existing content directory if it exists
+    if (existsSync(targetContentDir)) {
+      console.log(chalk.yellow("🗑️  Removing existing content directory..."));
+      execSync(`rm -rf "${targetContentDir}"`, { stdio: "inherit" });
+    }
+
+    // Ensure the target directory exists
+    await mkdir(targetContentDir, { recursive: true });
+
+    // Copy docs from temp directory to target
+    console.log(chalk.blue("📋 Copying generated docs..."));
+    execSync(`cp -r "${sourceContentDir}/docs/." "${targetContentDir}/"`, {
       stdio: "inherit",
     });
 
@@ -146,6 +184,10 @@ export async function moveContentToAstroProject(
     const sourceConfig = join(tempDir, "astro.config.mjs");
     const targetConfig = join(outputDir, "astro.config.mjs");
     await copyFile(sourceConfig, targetConfig);
+
+    // Clean up temp directory
+    console.log(chalk.blue("🧹 Cleaning up temporary files..."));
+    execSync(`rm -rf "${tempDir}"`, { stdio: "inherit" });
 
     console.log(chalk.green("✅ Content moved successfully"));
   } catch (error) {
@@ -198,7 +240,7 @@ This section contains documentation for all ${category} files in the project. Ea
 
 `;
 
-    const indexPath = join(baseDir, category, "_index.md");
+    const indexPath = join(baseDir, category, "index.md");
     await writeFile(indexPath, content, "utf-8");
   }
 

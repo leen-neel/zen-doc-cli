@@ -1,6 +1,6 @@
-import { icons } from "./icons.ts";
-import type { FileInfo } from "./fileRead.ts";
-import { getCategoryTitle, getCategoryDescription } from "./fileUtils.ts";
+import { icons } from "./icons.js";
+import type { FileInfo } from "./fileRead.js";
+import { getCategoryTitle, getCategoryDescription } from "./fileUtils.js";
 
 export function generateIndexMdx(
   groupedFiles: Record<string, FileInfo[]>,
@@ -12,7 +12,18 @@ export function generateIndexMdx(
   let content = `---
 title: ${config.projectName} Documentation
 description: Comprehensive documentation for ${config.projectName}
+
+hero:
+  tagline: Project documentation for ${config.projectName}
+  image:
+    file: ../../assets/houston.webp
+  actions:
+    - text: Components Guide
+      link: /components/
+      icon: right-arrow
 ---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
 
 # Welcome to ${config.projectName}
 

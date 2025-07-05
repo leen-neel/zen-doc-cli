@@ -2,31 +2,31 @@ import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
-import type { FileInfo } from "./fileRead.ts";
+import type { FileInfo } from "./fileRead.js";
 import chalk from "chalk";
 
 // Import from modular files
-import { getCategoryPrompt } from "./prompts.ts";
-import { addFrontmatter, generateDocStructure } from "./contentProcessing.ts";
-import { groupFilesByCategory, getUniqueFileName } from "./fileUtils.ts";
-import { generateIndexMdx } from "./indexGenerator.ts";
+import { getCategoryPrompt } from "./prompts.js";
+import { addFrontmatter, generateDocStructure } from "./contentProcessing.js";
+import { groupFilesByCategory, getUniqueFileName } from "./fileUtils.js";
+import { generateIndexMdx } from "./indexGenerator.js";
 import {
   createAstroProject,
   generateAstroConfig,
   moveContentToAstroProject,
   generateCategoryIndexes,
-} from "./astroGenerator.ts";
+} from "./astroGenerator.js";
 
 // Load config function
 async function loadConfig() {
   try {
     // Look for config in the current working directory (project root)
-    const configPath = join(process.cwd(), "zen.config.js");
+    const configPath = join(process.cwd(), "zen.config.mjs");
     const config = (await import(configPath)).default;
     return config;
   } catch (error) {
     console.error(
-      chalk.red("❌ Error: zen.config.js not found in project root!")
+      chalk.red("❌ Error: zen.config.mjs not found in project root!")
     );
     console.error(
       chalk.yellow("Please run 'zen-doc init' to create a configuration file.")
@@ -63,7 +63,7 @@ export async function generateDocs(fileInfos: FileInfo[]): Promise<void> {
     console.log(chalk.green(`✅ AI connection successful`));
   } catch (error) {
     console.error(chalk.red(`❌ AI test failed: ${error}`));
-    console.error(chalk.yellow("Please check your API key in zen.config.js"));
+    console.error(chalk.yellow("Please check your API key in zen.config.mjs"));
     process.exit(1);
   }
 
