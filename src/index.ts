@@ -8,11 +8,13 @@ import {
   generateDocs,
   generateConfig,
 } from "./core/index.js";
+import { checkValidNodeProject } from "./core/fileUtils.js";
 
 const argv = typeof Bun !== "undefined" ? Bun.argv : process.argv;
 
 yargs(hideBin(argv))
   .command("init", "Generate zen.config.mjs", {}, async () => {
+    checkValidNodeProject();
     await generateConfig();
   })
   .command(
@@ -22,6 +24,7 @@ yargs(hideBin(argv))
       return yargs;
     },
     async (argv) => {
+      checkValidNodeProject();
       const spinner = ora("Reading codebase from current directory...").start();
 
       try {

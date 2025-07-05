@@ -3,6 +3,9 @@ import {
   getRouteFromPath,
   getHttpMethodFromFile,
 } from "./contentProcessing.js";
+import { existsSync } from "fs";
+import { join } from "path";
+import chalk from "chalk";
 
 export function groupFilesByCategory(
   fileInfos: FileInfo[]
@@ -149,4 +152,22 @@ export function getCategoryDescription(category: string): string {
   };
 
   return descriptions[category as keyof typeof descriptions] || "";
+}
+
+export function checkValidNodeProject(): void {
+  const packageJsonPath = join(process.cwd(), "package.json");
+
+  if (!existsSync(packageJsonPath)) {
+    console.error(chalk.red("❌ Error: Not a valid Node.js project"));
+    console.error(
+      chalk.gray("   No package.json file found in the current directory.")
+    );
+    console.error(
+      chalk.yellow(
+        "   Please run this command from a Node.js project root directory."
+      )
+    );
+    console.error(chalk.gray("   Current directory: " + process.cwd()));
+    process.exit(1);
+  }
 }
