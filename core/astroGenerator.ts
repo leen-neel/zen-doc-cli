@@ -1,9 +1,9 @@
-import { writeFile, mkdir, copyFile } from "fs/promises";
+import { writeFile, copyFile } from "fs/promises";
 import { join } from "path";
 import { execSync } from "child_process";
 import chalk from "chalk";
-import type { FileInfo } from "./fileRead.ts";
-import { getCategoryTitle } from "./fileUtils.ts";
+import type { FileInfo } from "./fileRead";
+import { getCategoryTitle } from "./fileUtils";
 
 export async function createAstroProject(
   outputDir: string,

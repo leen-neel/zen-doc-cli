@@ -1,4 +1,4 @@
-import type { FileInfo } from "./fileRead.ts";
+import type { FileInfo } from "./fileRead";
 
 export function getCategoryPrompt(
   category: string,

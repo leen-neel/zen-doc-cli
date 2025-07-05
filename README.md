@@ -1,3 +1,5 @@
+# ZenDoc - All in one documentation tool
+
 <p align="center">
   <img src="/assets/cover.jpeg" width="200" alt="Zen Doc Logo" />
 </p>
@@ -33,18 +35,13 @@
 
 ```bash
 npx zen-doc init
-
-```
-
-## Then
-```bash
 npx zen-doc generate
-
 ```
+
 ✅ A full documentation site will be created in the /docs folder.
 
-
 ### 📦 Development Setup
+
 ```bash
 git clone https://github.com/your-username/zen-doc.git
 cd zen-doc

@@ -1,17 +1,15 @@
 {
   "name": "zen-doc",
-  "version": "1.0.3",
-  "description": "A documentation generation tool",
-  "main": "index.ts",
-  "module": "index.ts",
+  "version": "1.0.4",
+  "description": "Your codebase documentation, in a matter of minutes",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
   "exports": {
-    ".": "./index.ts"
+    ".": "./dist/index.js"
   },
   "type": "module",
   "files": [
-    "index.js",
-    "index.ts",
-    "core/**/*.ts",
+    "dist",
     "README.md"
   ],
   "keywords": [
@@ -24,16 +22,14 @@
   "license": "MIT",
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/yargs": "^17.0.33"
-  },
-  "peerDependencies": {
+    "@types/yargs": "^17.0.33",
     "typescript": "^5"
   },
   "overrides": {
     "tsx": "^4.0.0"
   },
   "bin": {
-    "zen-doc": "./index.js"
+    "zen-doc": "./dist/index.js"
   },
   "dependencies": {
     "@ai-sdk/google": "^1.2.22",
@@ -53,6 +49,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "prepare": "echo 'Package prepared for distribution'"
+    "prepare": "echo 'Package prepared for distribution'",
+    "build": "tsc"
   }
 }

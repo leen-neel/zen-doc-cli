@@ -1,8 +1,5 @@
-import type { FileInfo } from "./fileRead.ts";
-import {
-  getRouteFromPath,
-  getHttpMethodFromFile,
-} from "./contentProcessing.ts";
+import type { FileInfo } from "./fileRead";
+import { getRouteFromPath, getHttpMethodFromFile } from "./contentProcessing";
 
 export function groupFilesByCategory(
   fileInfos: FileInfo[]
