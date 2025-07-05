@@ -1,6 +1,6 @@
 {
   "name": "zen-doc",
-  "version": "1.0.5",
+  "version": "1.0.14",
   "description": "Your codebase documentation, in a matter of minutes",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -23,6 +23,7 @@
   "devDependencies": {
     "@types/bun": "latest",
     "@types/yargs": "^17.0.33",
+    "tsup": "^8.5.0",
     "typescript": "^5"
   },
   "overrides": {
@@ -50,6 +51,7 @@
   },
   "scripts": {
     "prepare": "echo 'Package prepared for distribution'",
-    "build": "tsc && node -e \"const fs=require('fs');const content=fs.readFileSync('dist/index.js','utf8');fs.writeFileSync('dist/index.js','#!/usr/bin/env node\\n'+content);\""
+    "clean": "rm -rf dist",
+    "build": "npm run clean && tsup"
   }
 }

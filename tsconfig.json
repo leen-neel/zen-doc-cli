@@ -23,5 +23,5 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
   },
-  "include": ["core", "index.ts"]
+  "include": ["src/core", "src/index.ts"]
 }

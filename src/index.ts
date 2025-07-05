@@ -6,12 +6,12 @@ import {
   categorizeFiles,
   generateDocs,
   generateConfig,
-} from "./core";
+} from "./core/index.js";
 
 const argv = typeof Bun !== "undefined" ? Bun.argv : process.argv;
 
 yargs(hideBin(argv))
-  .command("init", "Generate zen.config.js", {}, async () => {
+  .command("init", "Generate zen.config.mjs", {}, async () => {
     await generateConfig();
   })
   .command(

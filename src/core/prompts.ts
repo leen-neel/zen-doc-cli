@@ -1,4 +1,4 @@
-import type { FileInfo } from "./fileRead";
+import type { FileInfo } from "./fileRead.js";
 
 export function getCategoryPrompt(
   category: string,
