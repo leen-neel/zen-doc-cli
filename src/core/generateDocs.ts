@@ -6,6 +6,7 @@ import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import type { FileInfo } from "./fileRead.js";
 import chalk from "chalk";
+import ora from "ora";
 
 // Import from modular files
 import { getCategoryPrompt } from "./prompts.js";
@@ -18,6 +19,9 @@ import {
   moveContentToAstroProject,
   generateCategoryIndexes,
 } from "./astroGenerator.js";
+
+// Utility function to add a small delay for better UX
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Load config function
 async function loadConfig() {
@@ -36,33 +40,33 @@ async function loadConfig() {
 
     // Check if relative path exists
     if (existsSync(relativeConfigPath)) {
-      console.log(
-        chalk.gray(
-          `📁 Loading config from relative path: ${relativeConfigPath}`
-        )
-      );
+      const configSpinner = ora(
+        `Loading config from relative path: ${relativeConfigPath}`
+      ).start();
       try {
         config = (await import(relativeConfigPath)).default;
+        configSpinner.succeed(`Config loaded from: ${relativeConfigPath}`);
       } catch (relativeError) {
-        console.log(
-          chalk.yellow(`⚠️  Relative path failed, trying absolute path...`)
-        );
+        configSpinner.warn(`Relative path failed, trying absolute path...`);
         configPath = absoluteConfigPath;
         // Convert absolute path to file URL for Windows compatibility
         const fileUrl = pathToFileURL(absoluteConfigPath).href;
         config = (await import(fileUrl)).default;
+        configSpinner.succeed(`Config loaded from: ${absoluteConfigPath}`);
       }
     } else if (existsSync(absoluteConfigPath)) {
-      console.log(
-        chalk.gray(
-          `📁 Loading config from absolute path: ${absoluteConfigPath}`
-        )
-      );
+      const configSpinner = ora(
+        `Loading config from absolute path: ${absoluteConfigPath}`
+      ).start();
       configPath = absoluteConfigPath;
       // Convert absolute path to file URL for Windows compatibility
       const fileUrl = pathToFileURL(absoluteConfigPath).href;
       config = (await import(fileUrl)).default;
+      configSpinner.succeed(`Config loaded from: ${absoluteConfigPath}`);
     } else {
+      const configSpinner = ora("Looking for configuration file...").fail(
+        "Configuration file not found"
+      );
       console.error(chalk.red(`❌ Error: zen.config.mjs not found at:`));
       console.error(chalk.gray(`   Relative: ${relativeConfigPath}`));
       console.error(chalk.gray(`   Absolute: ${absoluteConfigPath}`));
@@ -78,9 +82,6 @@ async function loadConfig() {
       throw new Error("Config file exists but has no default export");
     }
 
-    console.log(
-      chalk.green(`✅ Config loaded successfully from: ${configPath}`)
-    );
     return config;
   } catch (error) {
     console.error(chalk.red(`❌ Error loading zen.config.mjs: ${error}`));
@@ -112,6 +113,10 @@ export async function generateDocs(fileInfos: FileInfo[]): Promise<void> {
 
   // Set the API key from config as environment variable
   process.env.GOOGLE_GENERATIVE_AI_API_KEY = config.apiKey;
+
+  // Suppress any potential AI SDK logging
+  process.env.AI_SDK_DEBUG = "false";
+
   console.log(
     chalk.blue(
       `🔧 Loaded config for project: ${chalk.bold(config.projectName)}`
@@ -119,18 +124,29 @@ export async function generateDocs(fileInfos: FileInfo[]): Promise<void> {
   );
 
   // Create Astro project with Starlight template if it doesn't exist
+  const astroSpinner = ora({
+    text: "Setting up Astro project...",
+    color: "blue",
+    spinner: "dots",
+  }).start();
   await createAstroProject(outputDir, config);
+  astroSpinner.succeed("Astro project setup complete");
 
   // Test AI connection
+  const aiSpinner = ora({
+    text: "Testing AI connection...",
+    color: "yellow",
+    spinner: "dots",
+  }).start();
   try {
-    console.log(chalk.cyan("🧪 Testing AI connection..."));
     const testResult = await generateText({
       model: google("gemini-2.0-flash"),
       prompt: "Say 'Hello, AI is working!'",
       maxTokens: 50,
     });
-    console.log(chalk.green(`✅ AI connection successful`));
+    aiSpinner.succeed("AI connection successful");
   } catch (error) {
+    aiSpinner.fail("AI test failed");
     console.error(chalk.red(`❌ AI test failed: ${error}`));
     console.error(chalk.yellow("Please check your API key in zen.config.mjs"));
     process.exit(1);
@@ -145,46 +161,81 @@ export async function generateDocs(fileInfos: FileInfo[]): Promise<void> {
   // Group files by category
   const grouped = groupFilesByCategory(filteredFileInfos);
 
-  // Generate documentation for each category
-  for (const [category, files] of Object.entries(grouped)) {
-    if (files.length === 0) continue;
+  // Single spinner for the whole documentation generation
+  const generateSpinner = ora({
+    text: "Generating documentation...",
+    color: "cyan",
+    spinner: "dots",
+  }).start();
 
-    console.log(
-      chalk.magenta(
-        `\n📚 Generating ${chalk.bold(category.toUpperCase())} documentation`
-      )
-    );
-    console.log(chalk.gray(`   Found ${files.length} files`));
+  try {
+    // Generate documentation for each category
+    for (const [category, files] of Object.entries(grouped)) {
+      if (files.length === 0) continue;
 
-    // Create category directory
-    const categoryDir = join(baseDir, category);
-    await mkdir(categoryDir, { recursive: true });
+      // Create category directory
+      const categoryDir = join(baseDir, category);
+      await mkdir(categoryDir, { recursive: true });
 
-    // Generate docs for each file in the category
-    for (const file of files) {
-      console.log(chalk.cyan(`   🤖 Processing: ${chalk.bold(file.fileName)}`));
-      const docContent = await generateFileDoc(file, category, config);
-      const fileName = getUniqueFileName(file, category);
-      const filePath = join(categoryDir, fileName);
+      // Generate docs for each file in the category
+      for (const file of files) {
+        try {
+          const docContent = await generateFileDoc(file, category, config);
+          const fileName = getUniqueFileName(file, category);
+          const filePath = join(categoryDir, fileName);
 
-      await writeFile(filePath, docContent, "utf-8");
-      console.log(chalk.green(`   ✅ Generated: ${fileName}`));
+          await writeFile(filePath, docContent, "utf-8");
+          // Print a simple line for each file
+          console.log(`Generated: ${fileName}`);
+        } catch (error) {
+          console.log(`Failed to process: ${file.fileName}`);
+          console.error(chalk.red(`Error processing ${file.fileName}:`), error);
+        }
+      }
     }
+    generateSpinner.succeed("Documentation generated successfully!");
+  } catch (error) {
+    generateSpinner.fail("Failed to generate documentation");
+    throw error;
   }
 
   // Generate category index files
+  const indexSpinner = ora({
+    text: "Generating category indexes...",
+    color: "green",
+    spinner: "dots",
+  }).start();
   await generateCategoryIndexes(grouped, baseDir);
+  indexSpinner.succeed("Category indexes generated");
 
   // Generate Astro config with Starlight sidebar
+  const configSpinner = ora({
+    text: "Generating Astro configuration...",
+    color: "magenta",
+    spinner: "dots",
+  }).start();
   await generateAstroConfig(grouped, config, tempDir);
+  configSpinner.succeed("Astro configuration generated");
 
   // Generate custom index.mdx file
+  const mainIndexSpinner = ora({
+    text: "Generating main index file...",
+    color: "blue",
+    spinner: "dots",
+  }).start();
   const indexContent = generateIndexMdx(grouped, config);
   const indexPath = join(tempDir, "content", "docs", "index.mdx");
   await writeFile(indexPath, indexContent, "utf-8");
+  mainIndexSpinner.succeed("Main index file generated");
 
   // Move generated content to Astro project
+  const moveSpinner = ora({
+    text: "Moving content to final location...",
+    color: "cyan",
+    spinner: "dots",
+  }).start();
   await moveContentToAstroProject(tempDir, outputDir);
+  moveSpinner.succeed("Content moved successfully");
 
   console.log(chalk.green(`\n🎉 Documentation generated successfully!`));
   console.log(
@@ -208,16 +259,9 @@ async function generateFileDoc(
       temperature: 0.3,
     });
 
-    console.log(chalk.gray(`     Generated ${result.text.length} characters`));
-
     // Add frontmatter to the AI-generated content
     return addFrontmatter(result.text, file, category, config);
   } catch (error) {
-    console.warn(
-      chalk.yellow(`     ⚠️  AI generation failed, using fallback structure`)
-    );
-    console.warn(chalk.gray(`     Error: ${error}`));
-
     // Fallback to structure generation
     const fallbackContent = generateDocStructure(
       file,

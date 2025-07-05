@@ -1,6 +1,7 @@
 import { readdir, readFile } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
+import ora from "ora";
 
 export interface FileInfo {
   path: string;
@@ -32,7 +33,7 @@ export async function readCodebase(
           return pattern.replace(/^\/+/, "").replace(/\/+$/, "");
         });
     } catch (error) {
-      console.warn("Warning: Could not read .gitignore file:", error);
+      // Silently handle gitignore read errors - not critical
     }
   }
 
@@ -92,7 +93,7 @@ export async function readCodebase(
         }
       }
     } catch (error) {
-      console.error(`Error reading directory ${currentDir}:`, error);
+      // Silently handle directory read errors - not critical for overall process
     }
   }
 
@@ -125,7 +126,7 @@ export async function categorizeFiles(files: string[]): Promise<FileInfo[]> {
         extension,
       });
     } catch (error) {
-      console.warn(`Could not read file ${filePath}:`, error);
+      // Silently handle file read errors - not critical for overall process
     }
   }
 

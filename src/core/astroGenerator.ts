@@ -3,6 +3,7 @@ import { existsSync } from "fs";
 import { join } from "path";
 import { execSync } from "child_process";
 import chalk from "chalk";
+import ora from "ora";
 import type { FileInfo } from "./fileRead.js";
 import {
   getCategoryTitle,
@@ -18,7 +19,7 @@ export async function createAstroProject(
   outputDir: string,
   config: any
 ): Promise<void> {
-  console.log(chalk.cyan(`🔍 Checking Astro project at: ${outputDir}`));
+  const checkSpinner = ora(`Checking Astro project at: ${outputDir}`).start();
 
   try {
     // Check if Astro project already exists by looking for package.json and astro.config.mjs
@@ -28,33 +29,21 @@ export async function createAstroProject(
     const hasPackageJson = existsSync(packageJsonPath);
     const hasAstroConfig = existsSync(astroConfigPath);
 
-    console.log(chalk.gray(`   Has package.json: ${hasPackageJson}`));
-    console.log(chalk.gray(`   Has astro.config.mjs: ${hasAstroConfig}`));
-
     if (hasPackageJson && hasAstroConfig) {
-      console.log(
-        chalk.blue("📁 Astro project already exists, using existing project")
+      checkSpinner.succeed(
+        "Astro project already exists, using existing project"
       );
       return;
     }
 
     // If directory exists but doesn't have Astro files, warn user
     if (existsSync(outputDir) && !hasPackageJson) {
-      console.log(
-        chalk.yellow(
-          `⚠️  Directory ${outputDir} exists but is not an Astro project`
-        )
-      );
-      console.log(
-        chalk.yellow("Creating new Astro project in this directory...")
+      checkSpinner.warn(
+        `Directory ${outputDir} exists but is not an Astro project`
       );
     }
 
-    console.log(
-      chalk.cyan(
-        `🚀 Creating new Astro project with Starlight in ${outputDir}...`
-      )
-    );
+    checkSpinner.text = `Creating new Astro project with Starlight in ${outputDir}...`;
 
     // Create Astro project with Starlight template (cross-platform)
     const command =
@@ -64,9 +53,9 @@ export async function createAstroProject(
 
     execSync(command, { stdio: "inherit" });
 
-    console.log(chalk.green("✅ Astro project created successfully"));
+    checkSpinner.succeed("Astro project created successfully");
   } catch (error) {
-    console.error(chalk.red("❌ Failed to create Astro project:"));
+    checkSpinner.fail("Failed to create Astro project");
     console.error(chalk.red(error));
     process.exit(1);
   }
@@ -77,7 +66,7 @@ export async function generateAstroConfig(
   config: any,
   tempDir: string
 ): Promise<void> {
-  console.log(chalk.cyan("⚙️  Generating Astro configuration..."));
+  const configSpinner = ora("Generating Astro configuration...").start();
 
   const sidebarConfig = generateSidebarConfig(grouped);
 
@@ -100,7 +89,7 @@ export default defineConfig({
 `;
 
   await writeFile(join(tempDir, "astro.config.mjs"), astroConfig, "utf-8");
-  console.log(chalk.green("✅ Astro configuration generated"));
+  configSpinner.succeed("Astro configuration generated");
 }
 
 export function generateSidebarConfig(
@@ -166,14 +155,14 @@ export async function moveContentToAstroProject(
   tempDir: string,
   outputDir: string
 ): Promise<void> {
-  console.log(chalk.cyan("📦 Moving generated content to Astro project..."));
-  console.log(chalk.gray(`   Temp directory: ${tempDir}`));
-  console.log(chalk.gray(`   Output directory: ${outputDir}`));
+  const moveSpinner = ora(
+    "Moving generated content to Astro project..."
+  ).start();
 
   try {
     // Check if temp directory exists
     if (!existsSync(tempDir)) {
-      console.error(chalk.red(`❌ Temp directory does not exist: ${tempDir}`));
+      moveSpinner.fail(`Temp directory does not exist: ${tempDir}`);
       process.exit(1);
     }
 
@@ -181,22 +170,17 @@ export async function moveContentToAstroProject(
     const sourceContentDir = join(tempDir, "content");
     const targetContentDir = join(outputDir, "src/content/docs");
 
-    console.log(chalk.gray(`   Source content dir: ${sourceContentDir}`));
-    console.log(chalk.gray(`   Target content dir: ${targetContentDir}`));
-
     // Check if source content exists
     if (!existsSync(sourceContentDir)) {
-      console.error(
-        chalk.red(
-          `❌ Source content directory does not exist: ${sourceContentDir}`
-        )
+      moveSpinner.fail(
+        `Source content directory does not exist: ${sourceContentDir}`
       );
       process.exit(1);
     }
 
     // Delete existing content directory if it exists
     if (existsSync(targetContentDir)) {
-      console.log(chalk.yellow("🗑️  Removing existing content directory..."));
+      moveSpinner.text = "Removing existing content directory...";
       await rm(targetContentDir, { recursive: true, force: true });
     }
 
@@ -204,21 +188,22 @@ export async function moveContentToAstroProject(
     await mkdir(targetContentDir, { recursive: true });
 
     // Copy docs from temp directory to target using Node.js APIs
-    console.log(chalk.blue("📋 Copying generated docs..."));
+    moveSpinner.text = "Copying generated docs...";
     await copyDirectory(join(sourceContentDir, "docs"), targetContentDir);
 
     // Copy Astro config
+    moveSpinner.text = "Copying Astro configuration...";
     const sourceConfig = join(tempDir, "astro.config.mjs");
     const targetConfig = join(outputDir, "astro.config.mjs");
     await copyFile(sourceConfig, targetConfig);
 
     // Clean up temp directory
-    console.log(chalk.blue("🧹 Cleaning up temporary files..."));
+    moveSpinner.text = "Cleaning up temporary files...";
     await rm(tempDir, { recursive: true, force: true });
 
-    console.log(chalk.green("✅ Content moved successfully"));
+    moveSpinner.succeed("Content moved successfully");
   } catch (error) {
-    console.error(chalk.red("❌ Failed to move content:"));
+    moveSpinner.fail("Failed to move content");
     console.error(chalk.red(error));
     process.exit(1);
   }
@@ -228,7 +213,7 @@ export async function generateCategoryIndexes(
   grouped: Record<string, FileInfo[]>,
   baseDir: string
 ): Promise<void> {
-  console.log(chalk.cyan("📋 Generating category index files..."));
+  const indexSpinner = ora("Generating category index files...").start();
 
   for (const [category, files] of Object.entries(grouped)) {
     if (files.length === 0) continue;
@@ -271,7 +256,7 @@ This section contains documentation for all ${category} files in the project. Ea
     await writeFile(indexPath, content, "utf-8");
   }
 
-  console.log(chalk.green("✅ Category indexes generated"));
+  indexSpinner.succeed("Category indexes generated");
 }
 
 function getCategoryDescription(category: string): string {

@@ -1,5 +1,6 @@
 import yargs from "yargs/yargs";
 import { hideBin } from "yargs/helpers";
+import ora from "ora";
 
 import {
   readCodebase,
@@ -21,16 +22,17 @@ yargs(hideBin(argv))
       return yargs;
     },
     async (argv) => {
-      console.log(`Reading codebase from current directory...`);
+      const spinner = ora("Reading codebase from current directory...").start();
 
       try {
         // Step 1: Read all files
         const files = await readCodebase();
-        console.log(`Found ${files.length} files`);
+        spinner.succeed(`Found ${files.length} files`);
 
         // Step 2: Categorize files
-        console.log(`\nCategorizing files...`);
+        const categorizeSpinner = ora("Categorizing files...").start();
         const fileInfos = await categorizeFiles(files);
+        categorizeSpinner.succeed("Files categorized successfully");
 
         // Show categorization summary
         const categoryCounts = fileInfos.reduce((acc, file) => {
@@ -38,16 +40,18 @@ yargs(hideBin(argv))
           return acc;
         }, {} as Record<string, number>);
 
-        console.log(`\nFile categories:`);
+        console.log(`\n📁 File categories:`);
         Object.entries(categoryCounts).forEach(([category, count]) => {
           console.log(`  - ${category}: ${count} files`);
         });
 
         // Step 3: Generate documentation
-        console.log(`\nGenerating documentation...`);
+        const generateSpinner = ora("Generating documentation...").start();
         await generateDocs(fileInfos);
+        generateSpinner.succeed("Documentation generated successfully!");
       } catch (error) {
-        console.error("Error processing files:", error);
+        spinner.fail("Error processing files");
+        console.error(error);
         process.exit(1);
       }
     }
