@@ -10,9 +10,14 @@ import {
 } from "./core/index.js";
 import { checkValidNodeProject } from "./core/fileUtils.js";
 
+// Hard-coded version
+const version = "1.0.23";
+
 const argv = typeof Bun !== "undefined" ? Bun.argv : process.argv;
 
 yargs(hideBin(argv))
+  .version(version)
+  .alias("v", "version")
   .command("init", "Generate zen.config.mjs", {}, async () => {
     checkValidNodeProject();
     await generateConfig();
