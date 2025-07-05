@@ -42,12 +42,19 @@ export async function readCodebase(
   ];
 
   function shouldIgnore(path: string): boolean {
-    const relativePath = path.replace(process.cwd(), "").replace(/^\/+/, "");
+    // Normalize path separators for cross-platform compatibility
+    const relativePath = path
+      .replace(process.cwd(), "")
+      .replace(/^[\/\\]+/, "")
+      .replace(/[\/\\]/g, "/"); // Convert all separators to forward slashes
 
     return allIgnoredPatterns.some((pattern) => {
+      // Normalize pattern separators
+      const normalizedPattern = pattern.replace(/[\/\\]/g, "/");
+
       // Handle directory patterns (ending with /)
-      if (pattern.endsWith("/")) {
-        const dirPattern = pattern.slice(0, -1);
+      if (normalizedPattern.endsWith("/")) {
+        const dirPattern = normalizedPattern.slice(0, -1);
         return (
           relativePath.startsWith(dirPattern + "/") ||
           relativePath === dirPattern
@@ -55,7 +62,10 @@ export async function readCodebase(
       }
 
       // Handle file patterns
-      return relativePath === pattern || relativePath.endsWith("/" + pattern);
+      return (
+        relativePath === normalizedPattern ||
+        relativePath.endsWith("/" + normalizedPattern)
+      );
     });
   }
 
@@ -67,7 +77,7 @@ export async function readCodebase(
         const fullPath = join(currentDir, entry.name);
         const relativePath = fullPath
           .replace(process.cwd(), "")
-          .replace(/^\/+/, "");
+          .replace(/^[\/\\]+/, "");
 
         if (entry.isDirectory()) {
           // Skip ignored folders
@@ -99,8 +109,8 @@ export async function categorizeFiles(files: string[]): Promise<FileInfo[]> {
       const content = await readFile(filePath, "utf-8");
       const relativePath = filePath
         .replace(process.cwd(), "")
-        .replace(/^\/+/, "");
-      const fileName = relativePath.split("/").pop() || "";
+        .replace(/^[\/\\]+/, "");
+      const fileName = relativePath.split(/[\/\\]/).pop() || "";
       const extension = fileName.split(".").pop()?.toLowerCase() || "";
 
       // Determine category based on path and content
@@ -127,8 +137,9 @@ function determineCategory(
   content: string,
   extension: string
 ): FileInfo["category"] {
-  const path = relativePath.toLowerCase();
-  const fileName = relativePath.split("/").pop() || "";
+  // Normalize path separators for cross-platform compatibility
+  const path = relativePath.replace(/[\/\\]/g, "/").toLowerCase();
+  const fileName = relativePath.split(/[\/\\]/).pop() || "";
 
   // Components - any file in components folder or subfolders
   if (

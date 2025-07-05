@@ -1,4 +1,4 @@
-import { writeFile, copyFile, mkdir } from "fs/promises";
+import { writeFile, copyFile, mkdir, rm, readdir, stat } from "fs/promises";
 import { existsSync } from "fs";
 import { join } from "path";
 import { execSync } from "child_process";
@@ -56,11 +56,13 @@ export async function createAstroProject(
       )
     );
 
-    // Create Astro project with Starlight template
-    execSync(
-      `npm create astro@latest ${outputDir} -- --template starlight --yes --no-git`,
-      { stdio: "inherit" }
-    );
+    // Create Astro project with Starlight template (cross-platform)
+    const command =
+      process.platform === "win32"
+        ? `npm create astro@latest "${outputDir}" -- --template starlight --yes --no-git`
+        : `npm create astro@latest ${outputDir} -- --template starlight --yes --no-git`;
+
+    execSync(command, { stdio: "inherit" });
 
     console.log(chalk.green("✅ Astro project created successfully"));
   } catch (error) {
@@ -133,6 +135,33 @@ export function generateSidebarConfig(
   return sidebar;
 }
 
+// Cross-platform directory copy function
+async function copyDirectory(
+  source: string,
+  destination: string
+): Promise<void> {
+  // Create destination directory if it doesn't exist
+  await mkdir(destination, { recursive: true });
+
+  // Read all items in the source directory
+  const items = await readdir(source);
+
+  for (const item of items) {
+    const sourcePath = join(source, item);
+    const destPath = join(destination, item);
+
+    const stats = await stat(sourcePath);
+
+    if (stats.isDirectory()) {
+      // Recursively copy subdirectories
+      await copyDirectory(sourcePath, destPath);
+    } else {
+      // Copy files
+      await copyFile(sourcePath, destPath);
+    }
+  }
+}
+
 export async function moveContentToAstroProject(
   tempDir: string,
   outputDir: string
@@ -168,17 +197,15 @@ export async function moveContentToAstroProject(
     // Delete existing content directory if it exists
     if (existsSync(targetContentDir)) {
       console.log(chalk.yellow("🗑️  Removing existing content directory..."));
-      execSync(`rm -rf "${targetContentDir}"`, { stdio: "inherit" });
+      await rm(targetContentDir, { recursive: true, force: true });
     }
 
     // Ensure the target directory exists
     await mkdir(targetContentDir, { recursive: true });
 
-    // Copy docs from temp directory to target
+    // Copy docs from temp directory to target using Node.js APIs
     console.log(chalk.blue("📋 Copying generated docs..."));
-    execSync(`cp -r "${sourceContentDir}/docs/." "${targetContentDir}/"`, {
-      stdio: "inherit",
-    });
+    await copyDirectory(join(sourceContentDir, "docs"), targetContentDir);
 
     // Copy Astro config
     const sourceConfig = join(tempDir, "astro.config.mjs");
@@ -187,7 +214,7 @@ export async function moveContentToAstroProject(
 
     // Clean up temp directory
     console.log(chalk.blue("🧹 Cleaning up temporary files..."));
-    execSync(`rm -rf "${tempDir}"`, { stdio: "inherit" });
+    await rm(tempDir, { recursive: true, force: true });
 
     console.log(chalk.green("✅ Content moved successfully"));
   } catch (error) {
