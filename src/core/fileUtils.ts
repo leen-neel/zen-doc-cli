@@ -34,8 +34,11 @@ export function getUniqueFileName(file: FileInfo, category: string): string {
     const httpMethod = getHttpMethodFromFile(file);
 
     if (routePath && httpMethod) {
-      const actionName = getActionFromRoute(routePath, httpMethod);
-      return `${httpMethod}-${actionName}.md`.toLowerCase();
+      // Use the route path for the filename, replacing slashes with dashes
+      const cleanRoute = routePath
+        .replace(/^\/+|\/+$/g, "")
+        .replace(/\//g, "-");
+      return `${httpMethod}-${cleanRoute}-api.md`.toLowerCase();
     }
 
     // Fallback: use baseName with api suffix
