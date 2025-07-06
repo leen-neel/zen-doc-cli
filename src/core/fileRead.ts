@@ -49,6 +49,12 @@ export async function readCodebase(
       .replace(/^[\/\\]+/, "")
       .replace(/[\/\\]/g, "/"); // Convert all separators to forward slashes
 
+    // Special handling for Next.js route groups - don't ignore directories with parentheses
+    // Route groups like (landing), (auth), etc. should not be ignored
+    if (relativePath.includes("(") && relativePath.includes(")")) {
+      return false;
+    }
+
     return allIgnoredPatterns.some((pattern) => {
       // Normalize pattern separators
       const normalizedPattern = pattern.replace(/[\/\\]/g, "/");
@@ -142,6 +148,16 @@ function determineCategory(
   const path = relativePath.replace(/[\/\\]/g, "/").toLowerCase();
   const fileName = relativePath.split(/[\/\\]/).pop() || "";
 
+  // Check if this is a page file (page.tsx, page.js, etc.) - these should always be pages
+  if (
+    fileName === "page.tsx" ||
+    fileName === "page.js" ||
+    fileName === "page.ts" ||
+    fileName === "page.jsx"
+  ) {
+    return "pages";
+  }
+
   // Components - any file in components folder or subfolders
   if (
     path.includes("/components/") ||
@@ -149,15 +165,6 @@ function determineCategory(
     path.startsWith("components/")
   ) {
     return "components";
-  }
-
-  // Pages - any file in pages folder or subfolders
-  if (
-    path.includes("/pages/") ||
-    path.includes("/app/") ||
-    path.startsWith("pages/")
-  ) {
-    return "pages";
   }
 
   // API routes - any file in api folder or subfolders

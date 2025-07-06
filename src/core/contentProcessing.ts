@@ -325,6 +325,8 @@ export function getRouteFromPath(relativePath: string): string {
       if (part === "content" || part === "docs") return false;
       // Remove empty parts
       if (!part) return false;
+      // Remove Next.js route groups (directories with parentheses)
+      if (part.startsWith("(") && part.endsWith(")")) return false;
       return true;
     })
     .map((part) => {

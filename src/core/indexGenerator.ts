@@ -16,7 +16,7 @@ template: splash
 hero:
   tagline: Project documentation for ${config.projectName}
   image:
-    file: ../../assets/houston.webp
+    file: "https://github.com/leen-neel/zen-doc-cli/raw/master/assets/logo.png"
   actions:
     - text: Components Guide
       link: /components/

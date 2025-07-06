@@ -14,6 +14,8 @@ import {
   getRouteFromPath,
   getHttpMethodFromFile,
 } from "./contentProcessing.js";
+import { google } from "@ai-sdk/google";
+import { generateText } from "ai";
 
 export async function createAstroProject(
   outputDir: string,
@@ -68,7 +70,7 @@ export async function generateAstroConfig(
 ): Promise<void> {
   const configSpinner = ora("Generating Astro configuration...").start();
 
-  const sidebarConfig = generateSidebarConfig(grouped);
+  const sidebarConfig = await generateSidebarConfigWithAI(grouped);
 
   // Configure internationalization if translation is enabled
   const i18nConfig =
@@ -181,35 +183,58 @@ async function checkForLanguageDirectories(dir: string): Promise<boolean> {
   }
 }
 
-export function generateSidebarConfig(
+export async function generateSidebarConfigWithAI(
   grouped: Record<string, FileInfo[]>
-): any[] {
+): Promise<any[]> {
   const sidebar: any[] = [];
 
-  // Add category sections
   for (const [category, files] of Object.entries(grouped)) {
     if (files.length === 0) continue;
 
     const categoryTitle = getCategoryTitle(category);
-    const categoryItems = files.map((file) => {
-      // Get the actual filename without extension (this matches what getUniqueFileName produces)
-      const actualFileName = getUniqueFileName(file, category).replace(
-        /\.md$/,
-        ""
-      );
-
-      return {
-        label: file.fileName.replace(/\.[^/.]+$/, ""), // Original filename for display
-        slug: `${category}/${actualFileName}`,
-      };
-    });
-
+    const categoryItems = await Promise.all(
+      files.map(async (file) => {
+        const actualFileName = getUniqueFileName(file, category).replace(
+          /\.md$/,
+          ""
+        );
+        let label = file.fileName.replace(/\.[^/.]+$/, "");
+        try {
+          // Use up to 20 lines of file content for context
+          const snippet = file.content.split("\n").slice(0, 20).join("\n");
+          let prompt;
+          if (category === "api") {
+            prompt = `Given the following file path and code, generate a short, human-friendly label for a documentation sidebar. If this is an API route, infer the HTTP method (GET, POST, etc.) and show the public route path, e.g., GET /api/tasks. Do not use any formatting. File path: ${file.relativePath}\nCode:\n\n${snippet}\n\nLabel:`;
+          } else {
+            prompt = `Given the following file path and code, generate a short, human-friendly label for a documentation sidebar. Do not use any sort of bold, italic, or other formatting. File path: ${file.relativePath}\nCode:\n\n${snippet}\n\nLabel:`;
+          }
+          const result = await generateText({
+            model: google("gemini-2.0-flash"),
+            prompt,
+            maxTokens: 30,
+            temperature: 0.2,
+          });
+          label = result.text.trim().replace(/^"|"$/g, "");
+        } catch (e) {
+          // fallback: clean up file/route name
+          if (category === "api" || category === "pages") {
+            let route = getRouteFromPath(file.relativePath);
+            if (route.startsWith("/app/")) route = route.replace(/^\/app/, "");
+            if (route.endsWith("/route")) route = route.replace(/\/route$/, "");
+            label = route;
+          }
+        }
+        return {
+          label,
+          slug: `${category}/${actualFileName}`,
+        };
+      })
+    );
     sidebar.push({
       label: categoryTitle,
       items: categoryItems,
     });
   }
-
   return sidebar;
 }
 
