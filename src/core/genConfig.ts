@@ -31,9 +31,14 @@ export const generateConfig = async () => {
       inactive: "no",
     },
     {
+      type: (prev) => (prev ? "text" : null),
+      name: "lingoApiKey",
+      message: "Enter your Lingo.dev API Key:",
+    },
+    {
       type: (prev) => (prev ? "list" : null),
       name: "languages",
-      message: "Which languages to support? (comma separated)",
+      message: "Which languages to support? (comma separated, e.g., es,fr,de)",
       separator: ",",
     },
   ]);

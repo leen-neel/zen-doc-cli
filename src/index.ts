@@ -43,10 +43,13 @@ yargs(hideBin(argv))
         categorizeSpinner.succeed("Files categorized successfully");
 
         // Show categorization summary
-        const categoryCounts = fileInfos.reduce((acc, file) => {
-          acc[file.category] = (acc[file.category] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
+        const categoryCounts = fileInfos.reduce(
+          (acc, file) => {
+            acc[file.category] = (acc[file.category] || 0) + 1;
+            return acc;
+          },
+          {} as Record<string, number>
+        );
 
         console.log(`\n📁 File categories:`);
         Object.entries(categoryCounts).forEach(([category, count]) => {

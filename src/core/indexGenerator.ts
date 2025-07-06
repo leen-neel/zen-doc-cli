@@ -12,7 +12,7 @@ export function generateIndexMdx(
   let content = `---
 title: ${config.projectName} Documentation
 description: Comprehensive documentation for ${config.projectName}
-
+template: splash
 hero:
   tagline: Project documentation for ${config.projectName}
   image:

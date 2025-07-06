@@ -1,7 +1,7 @@
 # ZenDoc - Code Documentation in Minutes
 
 <p align="center">
-  <img src="/assets/cover.jpeg" width="200" alt="Zen Doc Logo" />
+  <img src="/assets/logo.png" width="200" alt="Zen Doc Logo" />
 </p>
 
 <p align="center">
@@ -20,8 +20,8 @@
 
 - 🛠 One-command setup: `npx zen-doc generate`
 - 🧠 AI-generated docs from components, utils, APIs (using Google Gemini)
-- 🌐 Optional translation via Lingo.dev
-- ⚡ Astro-powered static Markdown documentation
+- 🌐 **Multi-language support** with automatic translation via Lingo.dev
+- ⚡ Astro-powered static Markdown documentation with Starlight
 - 🔐 Credit system w/ Stripe + Autumn (useautumn.com)
 - 🧹 Ignores unnecessary folders (e.g., node_modules, dist)
 - 🔄 Re-run anytime with saved config
@@ -37,6 +37,57 @@ npx zen-doc generate
 ```
 
 ✅ A full documentation site will be created in the /docs folder.
+
+## 🌐 Multi-Language Support
+
+ZenDoc supports automatic translation of your documentation using Lingo.dev. When you run `npx zen-doc init`, you can enable translation and specify which languages you want to support.
+
+### Supported Languages
+
+The documentation will be automatically translated to your chosen languages and organized in the following structure:
+
+```
+docs/
+├── content/
+│   └── docs/
+│       ├── index.mdx    # English (source) - main documentation
+│       ├── components/  # English components
+│       ├── pages/       # English pages
+│       ├── api/         # English API docs
+│       ├── lib/         # English utilities
+│       ├── es/          # Spanish translations
+│       ├── fr/          # French translations
+│       ├── de/          # German translations
+│       └── ...          # Other language translations
+```
+
+### Configuration
+
+During the initialization process, you'll be prompted to:
+
+1. **Enable translation**: Choose whether to enable automatic translation
+2. **Lingo.dev API Key**: Provide your Lingo.dev API key for translation services
+3. **Target languages**: Specify which languages to translate to (e.g., `es,fr,de`)
+
+Example configuration (`zen.config.mjs`):
+
+```javascript
+export default {
+  apiKey: "your-google-gemini-api-key",
+  projectName: "My Project",
+  useTranslation: true,
+  lingoApiKey: "your-lingo-dev-api-key",
+  languages: ["es", "fr", "de"],
+};
+```
+
+### Language Support
+
+ZenDoc supports a wide range of languages including:
+
+- **European**: Spanish (es), French (fr), German (de), Italian (it), Portuguese (pt), Dutch (nl), Swedish (sv), Danish (da), Norwegian (no), Finnish (fi), Polish (pl), Czech (cs), Hungarian (hu), Romanian (ro), Bulgarian (bg), Croatian (hr), Slovenian (sl), Estonian (et), Latvian (lv), Lithuanian (lt), Maltese (mt), Irish (ga), Welsh (cy)
+- **Asian**: Japanese (ja), Korean (ko), Chinese (zh), Hindi (hi)
+- **Other**: Russian (ru), Turkish (tr), Arabic (ar)
 
 ### 📦 Development Setup
 
