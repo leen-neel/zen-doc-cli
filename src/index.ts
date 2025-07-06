@@ -11,7 +11,7 @@ import {
 import { checkValidNodeProject } from "./core/fileUtils.js";
 
 // Hard-coded version
-const version = "1.0.24";
+const version = "1.0.27";
 
 const argv = typeof Bun !== "undefined" ? Bun.argv : process.argv;
 
@@ -43,10 +43,13 @@ yargs(hideBin(argv))
         categorizeSpinner.succeed("Files categorized successfully");
 
         // Show categorization summary
-        const categoryCounts = fileInfos.reduce((acc, file) => {
-          acc[file.category] = (acc[file.category] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
+        const categoryCounts = fileInfos.reduce(
+          (acc, file) => {
+            acc[file.category] = (acc[file.category] || 0) + 1;
+            return acc;
+          },
+          {} as Record<string, number>
+        );
 
         console.log(`\n📁 File categories:`);
         Object.entries(categoryCounts).forEach(([category, count]) => {

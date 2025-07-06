@@ -2,7 +2,8 @@ import prompts from "prompts";
 import { writeFileSync } from "fs";
 
 export const generateConfig = async () => {
-  const response = await prompts([
+  // First, get the basic config without translation questions
+  const basicResponse = await prompts([
     {
       type: "text",
       name: "apiKey",
@@ -30,13 +31,32 @@ export const generateConfig = async () => {
       active: "yes",
       inactive: "no",
     },
-    {
-      type: (prev) => (prev ? "list" : null),
-      name: "languages",
-      message: "Which languages to support? (comma separated)",
-      separator: ",",
-    },
   ]);
+
+  let response: any = { ...basicResponse };
+
+  // If translation is enabled, ask for additional translation questions
+  if (basicResponse.useTranslation) {
+    const translationResponse = await prompts([
+      {
+        type: "text",
+        name: "lingoApiKey",
+        message: "Enter your Lingo.dev API Key:",
+      },
+      {
+        type: "list",
+        name: "languages",
+        message:
+          "Which languages to support? (comma separated, e.g., es,fr,de)",
+        separator: ",",
+      },
+    ]);
+    response = { ...response, ...translationResponse };
+  } else {
+    // Set empty values for translation fields if translation is disabled
+    response.lingoApiKey = "";
+    response.languages = [];
+  }
 
   const config = `export default ${JSON.stringify(response, null, 2)};\n`;
   writeFileSync("zen.config.mjs", config);

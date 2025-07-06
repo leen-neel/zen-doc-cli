@@ -70,6 +70,27 @@ export async function generateAstroConfig(
 
   const sidebarConfig = generateSidebarConfig(grouped);
 
+  // Configure internationalization if translation is enabled
+  const i18nConfig =
+    config.useTranslation && config.languages && config.languages.length > 0
+      ? `
+      defaultLocale: 'root',
+      locales: {
+        root: {
+          label: 'English',
+          lang: 'en',
+        },
+        ${config.languages
+          .map(
+            (lang: string) => `${lang}: {
+          label: '${getLanguageLabel(lang)}',
+          lang: '${lang}',
+        }`
+          )
+          .join(",\n        ")}
+      },`
+      : "";
+
   const astroConfig = `import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
@@ -79,7 +100,7 @@ export default defineConfig({
       title: '${config.projectName}',
       description: '${config.description || "Project documentation"}',
       favicon: '/favicon.svg',
-      sidebar: ${JSON.stringify(sidebarConfig, null, 2)},
+      sidebar: ${JSON.stringify(sidebarConfig, null, 2)},${i18nConfig}
     }),
   ],
   server: {
@@ -90,6 +111,74 @@ export default defineConfig({
 
   await writeFile(join(tempDir, "astro.config.mjs"), astroConfig, "utf-8");
   configSpinner.succeed("Astro configuration generated");
+}
+
+/**
+ * Get human-readable language label
+ */
+function getLanguageLabel(langCode: string): string {
+  const languageLabels: Record<string, string> = {
+    es: "Español",
+    fr: "Français",
+    de: "Deutsch",
+    it: "Italiano",
+    pt: "Português",
+    ru: "Русский",
+    ja: "日本語",
+    ko: "한국어",
+    zh: "中文",
+    ar: "العربية",
+    hi: "हिन्दी",
+    nl: "Nederlands",
+    sv: "Svenska",
+    da: "Dansk",
+    no: "Norsk",
+    fi: "Suomi",
+    pl: "Polski",
+    tr: "Türkçe",
+    cs: "Čeština",
+    sk: "Slovenčina",
+    hu: "Magyar",
+    ro: "Română",
+    bg: "Български",
+    hr: "Hrvatski",
+    sl: "Slovenščina",
+    et: "Eesti",
+    lv: "Latviešu",
+    lt: "Lietuvių",
+    mt: "Malti",
+    ga: "Gaeilge",
+    cy: "Cymraeg",
+  };
+
+  return languageLabels[langCode] || langCode.toUpperCase();
+}
+
+/**
+ * Check if a directory contains language subdirectories
+ */
+async function checkForLanguageDirectories(dir: string): Promise<boolean> {
+  try {
+    const { readdir, stat } = await import("fs/promises");
+    const items = await readdir(dir);
+
+    for (const item of items) {
+      const itemPath = join(dir, item);
+      const stats = await stat(itemPath);
+
+      if (stats.isDirectory()) {
+        // Check if this looks like a language directory (2-3 letter codes)
+        if (/^[a-z]{2,3}$/.test(item)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  } catch (error) {
+    console.error(`Error checking for language directories in ${dir}:`, error);
+    return false;
+  }
 }
 
 export function generateSidebarConfig(
@@ -189,7 +278,33 @@ export async function moveContentToAstroProject(
 
     // Copy docs from temp directory to target using Node.js APIs
     moveSpinner.text = "Copying generated docs...";
-    await copyDirectory(join(sourceContentDir, "docs"), targetContentDir);
+
+    // Check if we have language subdirectories (translation enabled)
+    const docsSourceDir = join(sourceContentDir, "docs");
+    const hasLanguageDirs = await checkForLanguageDirectories(docsSourceDir);
+
+    if (hasLanguageDirs) {
+      // Copy each language directory
+      const { readdir, stat } = await import("fs/promises");
+      const items = await readdir(docsSourceDir);
+
+      for (const item of items) {
+        const sourceItemPath = join(docsSourceDir, item);
+        const targetItemPath = join(targetContentDir, item);
+
+        // Check if it's a directory before copying
+        const stats = await stat(sourceItemPath);
+        if (stats.isDirectory()) {
+          await copyDirectory(sourceItemPath, targetItemPath);
+        } else if (stats.isFile()) {
+          // Copy individual files (like index.mdx) directly
+          await copyFile(sourceItemPath, targetItemPath);
+        }
+      }
+    } else {
+      // Copy docs directly (no translation)
+      await copyDirectory(docsSourceDir, targetContentDir);
+    }
 
     // Copy Astro config
     moveSpinner.text = "Copying Astro configuration...";

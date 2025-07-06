@@ -19,6 +19,7 @@ import {
   moveContentToAstroProject,
   generateCategoryIndexes,
 } from "./astroGenerator.js";
+import { DocumentationTranslator } from "./translation.js";
 
 // Utility function to add a small delay for better UX
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -228,6 +229,32 @@ export async function generateDocs(fileInfos: FileInfo[]): Promise<void> {
   await writeFile(indexPath, indexContent, "utf-8");
   mainIndexSpinner.succeed("Main index file generated");
 
+  // Handle translations if enabled (before moving to final location)
+  console.log(chalk.blue(`🔧 Translation config check:`));
+  console.log(chalk.gray(`   useTranslation: ${config.useTranslation}`));
+  console.log(
+    chalk.gray(`   lingoApiKey: ${config.lingoApiKey ? "present" : "missing"}`)
+  );
+  console.log(
+    chalk.gray(
+      `   languages: ${config.languages ? config.languages.join(", ") : "none"}`
+    )
+  );
+
+  if (
+    config.useTranslation &&
+    config.lingoApiKey &&
+    config.languages &&
+    config.languages.length > 0
+  ) {
+    console.log(
+      chalk.green(`✅ Translation conditions met, starting translation...`)
+    );
+    await handleTranslations(tempDir, config);
+  } else {
+    console.log(chalk.yellow(`⚠️  Translation skipped - conditions not met`));
+  }
+
   // Move generated content to Astro project
   const moveSpinner = ora({
     text: "Moving content to final location...",
@@ -270,5 +297,93 @@ async function generateFileDoc(
       config
     );
     return addFrontmatter(fallbackContent, file, category, config);
+  }
+}
+
+/**
+ * Handle translation of generated documentation
+ */
+async function handleTranslations(
+  outputDir: string,
+  config: any
+): Promise<void> {
+  const docsDir = join(outputDir, "content", "docs");
+
+  console.log(chalk.blue(`🔧 Starting translation process...`));
+  console.log(chalk.gray(`   Output directory: ${outputDir}`));
+  console.log(chalk.gray(`   Docs directory: ${docsDir}`));
+
+  // Create translator instance
+  const translator = new DocumentationTranslator({
+    apiKey: config.lingoApiKey,
+    languages: config.languages,
+    sourceLocale: "en", // Default source language
+  });
+
+  try {
+    const { mkdir, readdir, stat } = await import("fs/promises");
+    const { existsSync } = await import("fs");
+
+    // Check if docs directory exists and has content
+    if (!existsSync(docsDir)) {
+      console.log(
+        chalk.yellow("⚠️  Docs directory not found, skipping translation")
+      );
+      return;
+    }
+
+    const items = await readdir(docsDir);
+    console.log(
+      chalk.blue(`📁 Found items in docs directory: ${items.join(", ")}`)
+    );
+
+    // Filter out language directories and hidden files
+    const contentItems = items.filter(
+      (item) =>
+        !item.startsWith(".") &&
+        !config.languages.includes(item) &&
+        item !== "en"
+    );
+
+    console.log(
+      chalk.blue(`📁 Filtered content items: ${contentItems.join(", ")}`)
+    );
+
+    if (contentItems.length === 0) {
+      console.log(chalk.yellow("⚠️  No content files found to translate"));
+      return;
+    }
+
+    console.log(
+      chalk.blue(`📁 Content items to translate: ${contentItems.join(", ")}`)
+    );
+
+    // Create language directories for translations
+    for (const language of config.languages) {
+      const langDir = join(docsDir, language);
+      if (!existsSync(langDir)) {
+        await mkdir(langDir, { recursive: true });
+        console.log(chalk.green(`✅ Created language directory: ${language}`));
+      } else {
+        console.log(
+          chalk.gray(`📁 Language directory already exists: ${language}`)
+        );
+      }
+    }
+
+    // Now translate from the main docs directory to language subdirectories
+    console.log(chalk.blue(`🚀 Starting translation with Lingo.dev...`));
+    await translator.translateDocumentation(docsDir, docsDir);
+
+    console.log(chalk.green(`✅ Translations completed!`));
+    console.log(
+      chalk.blue(`📁 Translated docs available in: ${chalk.bold(docsDir)}`)
+    );
+  } catch (error) {
+    console.error(chalk.red(`❌ Translation failed: ${error}`));
+    if (error instanceof Error) {
+      console.error(chalk.red(`❌ Error details: ${error.message}`));
+    }
+    // Don't throw error to avoid breaking the main generation process
   }
 }
