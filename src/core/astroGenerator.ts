@@ -314,7 +314,7 @@ export async function moveContentToAstroProject(
 
     // Clean up temp directory
     moveSpinner.text = "Cleaning up temporary files...";
-    // await rm(tempDir, { recursive: true, force: true });
+    await rm(tempDir, { recursive: true, force: true });
 
     moveSpinner.succeed("Content moved successfully");
   } catch (error) {
