@@ -115,23 +115,24 @@ export async function generateDocs(fileInfos: FileInfo[]): Promise<void> {
   const tempDir = `./temp-zen-docs-${Date.now()}`;
   const baseDir = `${tempDir}/content/docs`;
 
-  // Set the API key from config as environment variable
-  process.env.GOOGLE_GENERATIVE_AI_API_KEY = config.apiKey;
-
   // Suppress any potential AI SDK logging
   process.env.AI_SDK_DEBUG = "false";
 
-  // console.log(
-  //   chalk.bold.bgMagentaBright.white("\n==============================") +
-  //     "\n" +
-  //     chalk.bold.bgMagentaBright.white("   ZenDoc Project Loaded   ") +
-  //     "\n" +
-  //     chalk.bold.bgMagentaBright.white("==============================") +
-  //     "\n" +
-  //     chalk.bold("🔧 Project: ") +
-  //     chalk.cyanBright.bold(config.projectName) +
-  //     "\n"
-  // );
+  // Validate API key is available
+  if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+    console.error(
+      chalk.red(
+        "❌ Error: GOOGLE_GENERATIVE_AI_API_KEY environment variable is not set"
+      )
+    );
+    console.error(
+      chalk.yellow("Please set your Google Gemini API key in your .env file:")
+    );
+    console.error(
+      chalk.gray("   GOOGLE_GENERATIVE_AI_API_KEY=your_api_key_here")
+    );
+    process.exit(1);
+  }
 
   // Create Astro project with Starlight template if it doesn't exist
   const astroSpinner = ora({
@@ -158,7 +159,11 @@ export async function generateDocs(fileInfos: FileInfo[]): Promise<void> {
   } catch (error) {
     aiSpinner.fail("AI test failed");
     console.error(chalk.red(`❌ AI test failed: ${error}`));
-    console.error(chalk.yellow("Please check your API key in zen.config.mjs"));
+    console.error(
+      chalk.yellow(
+        "Please check your GOOGLE_GENERATIVE_AI_API_KEY in your .env file"
+      )
+    );
     process.exit(1);
   }
 
