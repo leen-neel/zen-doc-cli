@@ -11,7 +11,11 @@ import ora from "ora";
 // Import from modular files
 import { getCategoryPrompt } from "./prompts.js";
 import { addFrontmatter, generateDocStructure } from "./contentProcessing.js";
-import { groupFilesByCategory, getUniqueFileName } from "./fileUtils.js";
+import {
+  groupFilesByCategory,
+  getUniqueFileName,
+  filterEmptyCategories,
+} from "./fileUtils.js";
 import { generateIndexMdx } from "./indexGenerator.js";
 import {
   createAstroProject,
@@ -118,11 +122,17 @@ export async function generateDocs(fileInfos: FileInfo[]): Promise<void> {
   // Suppress any potential AI SDK logging
   process.env.AI_SDK_DEBUG = "false";
 
-  console.log(
-    chalk.blue(
-      `🔧 Loaded config for project: ${chalk.bold(config.projectName)}`
-    )
-  );
+  // console.log(
+  //   chalk.bold.bgMagentaBright.white("\n==============================") +
+  //     "\n" +
+  //     chalk.bold.bgMagentaBright.white("   ZenDoc Project Loaded   ") +
+  //     "\n" +
+  //     chalk.bold.bgMagentaBright.white("==============================") +
+  //     "\n" +
+  //     chalk.bold("🔧 Project: ") +
+  //     chalk.cyanBright.bold(config.projectName) +
+  //     "\n"
+  // );
 
   // Create Astro project with Starlight template if it doesn't exist
   const astroSpinner = ora({
@@ -162,6 +172,9 @@ export async function generateDocs(fileInfos: FileInfo[]): Promise<void> {
   // Group files by category
   const grouped = groupFilesByCategory(filteredFileInfos);
 
+  // Filter out empty categories
+  const nonEmptyGrouped = filterEmptyCategories(grouped);
+
   // Single spinner for the whole documentation generation
   const generateSpinner = ora({
     text: "Generating documentation...",
@@ -171,7 +184,7 @@ export async function generateDocs(fileInfos: FileInfo[]): Promise<void> {
 
   try {
     // Generate documentation for each category
-    for (const [category, files] of Object.entries(grouped)) {
+    for (const [category, files] of Object.entries(nonEmptyGrouped)) {
       if (files.length === 0) continue;
 
       // Create category directory
@@ -187,14 +200,27 @@ export async function generateDocs(fileInfos: FileInfo[]): Promise<void> {
 
           await writeFile(filePath, docContent, "utf-8");
           // Print a simple line for each file
-          console.log(`Generated: ${fileName}`);
+          console.log(
+            chalk.greenBright.bold("  ✔ ") +
+              chalk.whiteBright("Generated: ") +
+              chalk.cyanBright(fileName)
+          );
         } catch (error) {
-          console.log(`Failed to process: ${file.fileName}`);
-          console.error(chalk.red(`Error processing ${file.fileName}:`), error);
+          console.log(
+            chalk.redBright.bold("  ✖ ") +
+              chalk.whiteBright("Failed to process: ") +
+              chalk.yellowBright(file.fileName)
+          );
+          console.error(
+            chalk.bgRed.white.bold(" ERROR "),
+            chalk.redBright(error)
+          );
         }
       }
     }
-    generateSpinner.succeed("Documentation generated successfully!");
+    generateSpinner.succeed(
+      chalk.greenBright.bold("🎉 Documentation generated successfully!")
+    );
   } catch (error) {
     generateSpinner.fail("Failed to generate documentation");
     throw error;
@@ -206,7 +232,7 @@ export async function generateDocs(fileInfos: FileInfo[]): Promise<void> {
     color: "green",
     spinner: "dots",
   }).start();
-  await generateCategoryIndexes(grouped, baseDir);
+  await generateCategoryIndexes(nonEmptyGrouped, baseDir);
   indexSpinner.succeed("Category indexes generated");
 
   // Generate Astro config with Starlight sidebar
@@ -215,7 +241,7 @@ export async function generateDocs(fileInfos: FileInfo[]): Promise<void> {
     color: "magenta",
     spinner: "dots",
   }).start();
-  await generateAstroConfig(grouped, config, tempDir);
+  await generateAstroConfig(nonEmptyGrouped, config, tempDir);
   configSpinner.succeed("Astro configuration generated");
 
   // Generate custom index.mdx file
@@ -224,7 +250,7 @@ export async function generateDocs(fileInfos: FileInfo[]): Promise<void> {
     color: "blue",
     spinner: "dots",
   }).start();
-  const indexContent = generateIndexMdx(grouped, config);
+  const indexContent = generateIndexMdx(nonEmptyGrouped, config);
   const indexPath = join(tempDir, "content", "docs", "index.mdx");
   await writeFile(indexPath, indexContent, "utf-8");
   mainIndexSpinner.succeed("Main index file generated");
@@ -264,10 +290,15 @@ export async function generateDocs(fileInfos: FileInfo[]): Promise<void> {
   await moveContentToAstroProject(tempDir, outputDir);
   moveSpinner.succeed("Content moved successfully");
 
-  console.log(chalk.green(`\n🎉 Documentation generated successfully!`));
   console.log(
-    chalk.blue(`📁 Output directory: ${chalk.bold(outputDir)}/content/docs`)
+    chalk.greenBright.bold("\n🎉 Documentation generated successfully!")
   );
+  console.log(
+    chalk.blueBright.bold("📁 Output directory: ") +
+      chalk.whiteBright.bold(`${outputDir}`)
+  );
+
+  console.log(chalk.gray.bold(`\ncd ${outputDir}\nnpm run dev\n`));
 }
 
 async function generateFileDoc(

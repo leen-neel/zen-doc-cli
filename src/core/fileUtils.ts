@@ -22,6 +22,23 @@ export function groupFilesByCategory(
   return grouped;
 }
 
+/**
+ * Filter out empty categories from grouped files
+ */
+export function filterEmptyCategories(
+  grouped: Record<string, FileInfo[]>
+): Record<string, FileInfo[]> {
+  const filtered: Record<string, FileInfo[]> = {};
+
+  for (const [category, files] of Object.entries(grouped)) {
+    if (files.length > 0) {
+      filtered[category] = files;
+    }
+  }
+
+  return filtered;
+}
+
 export function getUniqueFileName(file: FileInfo, category: string): string {
   const baseName = file.fileName.replace(/\.[^/.]+$/, ""); // Remove extension
 

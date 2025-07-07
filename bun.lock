@@ -5,11 +5,13 @@
       "name": "zen-doc",
       "dependencies": {
         "@ai-sdk/google": "^1.2.22",
+        "@types/figlet": "^1.7.0",
         "@types/glob": "^9.0.0",
         "@types/prompts": "^2.4.9",
         "@typescript-eslint/parser": "^8.35.1",
         "ai": "^4.3.16",
         "chalk": "^5.4.1",
+        "figlet": "^1.8.1",
         "glob": "^11.0.3",
         "jsonc-parser": "^3.3.1",
         "lingo.dev": "^0.105.3",
@@ -424,6 +426,8 @@
     "@types/estree": ["@types/estree@1.0.8", "", {}, "sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w=="],
 
     "@types/estree-jsx": ["@types/estree-jsx@1.0.5", "", { "dependencies": { "@types/estree": "*" } }, "sha512-52CcUVNFyfb1A2ALocQw/Dd1BQFNmSdkuC3BkZ6iqhdMfQz7JWOFRuJFloOzjk+6WijU56m9oKXFAXc7o3Towg=="],
+
+    "@types/figlet": ["@types/figlet@1.7.0", "", {}, "sha512-KwrT7p/8Eo3Op/HBSIwGXOsTZKYiM9NpWRBJ5sVjWP/SmlS+oxxRvJht/FNAtliJvja44N3ul1yATgohnVBV0Q=="],
 
     "@types/glob": ["@types/glob@9.0.0", "", { "dependencies": { "glob": "*" } }, "sha512-00UxlRaIUvYm4R4W9WYkN8/J+kV8fmOQ7okeH6YFtGWFMt3odD45tpG5yA5wnL7HE6lLgjaTW5n14ju2hl2NNA=="],
 

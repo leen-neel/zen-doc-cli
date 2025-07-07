@@ -1,12 +1,19 @@
 import { icons } from "./icons.js";
 import type { FileInfo } from "./fileRead.js";
-import { getCategoryTitle, getCategoryDescription } from "./fileUtils.js";
+import {
+  getCategoryTitle,
+  getCategoryDescription,
+  filterEmptyCategories,
+} from "./fileUtils.js";
 
 export function generateIndexMdx(
   groupedFiles: Record<string, FileInfo[]>,
   config: any
 ): string {
-  const categories = Object.keys(groupedFiles);
+  // Filter out empty categories
+  const nonEmptyCategories = filterEmptyCategories(groupedFiles);
+
+  const categories = Object.keys(nonEmptyCategories);
   const availableIcons = icons.slice(0, categories.length);
 
   let content = `---
@@ -40,7 +47,7 @@ Welcome to the comprehensive documentation for ${config.projectName}. This docum
     const icon = availableIcons[index] || "document";
     const title = getCategoryTitle(category);
     const description = getCategoryDescription(category);
-    const fileCount = groupedFiles[category].length;
+    const fileCount = nonEmptyCategories[category].length;
 
     content += `  <Card
     title="${title}"
@@ -72,10 +79,13 @@ To get started with ${
     config.projectName
   }, explore the documentation sections above. Each section contains detailed information about different aspects of the project:
 
-- **Components**: Reusable UI components with props, examples, and usage guidelines
-- **Pages**: Page components and routing information
-- **API Routes**: Server-side API endpoints and their specifications
-- **Libraries & Utilities**: Helper functions and shared utilities
+${categories
+  .map((category) => {
+    const title = getCategoryTitle(category);
+    const description = getCategoryDescription(category);
+    return `- **${title}**: ${description}`;
+  })
+  .join("\n")}
 
 ## Contributing
 

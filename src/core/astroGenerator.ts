@@ -10,10 +10,7 @@ import {
   getActionFromRoute,
   getUniqueFileName,
 } from "./fileUtils.js";
-import {
-  getRouteFromPath,
-  getHttpMethodFromFile,
-} from "./contentProcessing.js";
+import { getRouteFromPath } from "./contentProcessing.js";
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 

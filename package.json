@@ -34,11 +34,13 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^1.2.22",
+    "@types/figlet": "^1.7.0",
     "@types/glob": "^9.0.0",
     "@types/prompts": "^2.4.9",
     "@typescript-eslint/parser": "^8.35.1",
     "ai": "^4.3.16",
     "chalk": "^5.4.1",
+    "figlet": "^1.8.1",
     "glob": "^11.0.3",
     "jsonc-parser": "^3.3.1",
     "lingo.dev": "^0.105.3",

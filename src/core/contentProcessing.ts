@@ -313,8 +313,11 @@ export function getPageDescription(file: FileInfo): string {
 }
 
 export function getRouteFromPath(relativePath: string): string {
+  // Normalize path separators for cross-platform compatibility
+  const normalizedPath = relativePath.replace(/[\/\\]/g, "/");
+
   // Convert file path to route path (Next.js file-based routing)
-  const parts = relativePath.split("/");
+  const parts = normalizedPath.split("/");
 
   // Filter out temporary directory paths and other non-route parts
   const routeParts = parts

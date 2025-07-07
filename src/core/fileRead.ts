@@ -1,7 +1,6 @@
 import { readdir, readFile } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
-import ora from "ora";
 
 export interface FileInfo {
   path: string;
@@ -47,7 +46,7 @@ export async function readCodebase(
     const relativePath = path
       .replace(process.cwd(), "")
       .replace(/^[\/\\]+/, "")
-      .replace(/[\/\\]/g, "/"); // Convert all separators to forward slashes
+      .replace(/[\/\\]/g, "/"); // Normalize to forward slashes
 
     // Special handling for Next.js route groups - don't ignore directories with parentheses
     // Route groups like (landing), (auth), etc. should not be ignored
@@ -84,7 +83,8 @@ export async function readCodebase(
         const fullPath = join(currentDir, entry.name);
         const relativePath = fullPath
           .replace(process.cwd(), "")
-          .replace(/^[\/\\]+/, "");
+          .replace(/^[\/\\]+/, "")
+          .replace(/[\/\\]/g, "/"); // Normalize to forward slashes
 
         if (entry.isDirectory()) {
           // Skip ignored folders
@@ -116,8 +116,9 @@ export async function categorizeFiles(files: string[]): Promise<FileInfo[]> {
       const content = await readFile(filePath, "utf-8");
       const relativePath = filePath
         .replace(process.cwd(), "")
-        .replace(/^[\/\\]+/, "");
-      const fileName = relativePath.split(/[\/\\]/).pop() || "";
+        .replace(/^[\/\\]+/, "")
+        .replace(/[\/\\]/g, "/"); // Normalize to forward slashes
+      const fileName = relativePath.split("/").pop() || "";
       const extension = fileName.split(".").pop()?.toLowerCase() || "";
 
       // Determine category based on path and content
@@ -144,9 +145,9 @@ function determineCategory(
   content: string,
   extension: string
 ): FileInfo["category"] {
-  // Normalize path separators for cross-platform compatibility
-  const path = relativePath.replace(/[\/\\]/g, "/").toLowerCase();
-  const fileName = relativePath.split(/[\/\\]/).pop() || "";
+  // Path is already normalized to forward slashes from categorizeFiles
+  const path = relativePath.toLowerCase();
+  const fileName = relativePath.split("/").pop() || "";
 
   // Check if this is a page file (page.tsx, page.js, etc.) - these should always be pages
   if (
