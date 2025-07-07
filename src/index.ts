@@ -15,7 +15,7 @@ import {
 import { checkValidNodeProject } from "./core/fileUtils.js";
 
 // Hard-coded version
-const version = "1.0.31";
+const version = "1.0.32";
 
 /**
  * Parse .env file content into key-value pairs
