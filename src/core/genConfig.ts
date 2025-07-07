@@ -11,12 +11,6 @@ export const generateConfig = async () => {
     },
     { type: "text", name: "author", message: "Author Name:" },
     {
-      type: "list",
-      name: "include",
-      message: "Folders to include (comma separated):",
-      separator: ",",
-    },
-    {
       type: "text",
       name: "outputDir",
       message: "Output directory for docs:",
