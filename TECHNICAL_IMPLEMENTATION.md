@@ -205,20 +205,14 @@ The translation system (`src/core/translation.ts`) implements a sophisticated, e
 export class DocumentationTranslator {
   private lingo: LingoDotDevEngine;
   private config: TranslationConfig;
-  private translationCache: Map<string, string>;
-  private contextBuffer: Map<string, string[]>;
 
   constructor(config: TranslationConfig) {
+    this.config = config;
     this.lingo = new LingoDotDevEngine({
       apiKey: config.apiKey,
       batchSize: 50,
       idealBatchItemSize: 1000,
-      retryAttempts: 3,
-      timeout: 30000,
     });
-
-    this.translationCache = new Map();
-    this.contextBuffer = new Map();
   }
 }
 ```
@@ -255,263 +249,315 @@ The translation system implements a sophisticated multi-stage processing pipelin
 #### **Stage 1: Content Analysis & Segmentation**
 
 ```typescript
-private async analyzeContentStructure(content: string): Promise<ContentAnalysis> {
+private parseFrontmatter(content: string): {
+  frontmatter: string;
+  markdown: string;
+} {
+  const frontmatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
+  const match = content.match(frontmatterRegex);
+
+  if (match) {
+    return {
+      frontmatter: match[1],
+      markdown: match[2],
+    };
+  }
+
   return {
-    metadata: this.extractFrontmatter(content),
-    markdown: this.extractMarkdownContent(content),
-    codeBlocks: this.identifyCodeBlocks(content),
-    inlineCode: this.identifyInlineCode(content),
-    links: this.extractLinks(content),
-    images: this.extractImages(content),
-    contextMarkers: this.identifyContextMarkers(content)
+    frontmatter: "",
+    markdown: content,
   };
 }
 ```
 
-#### **Stage 2: Context-Aware Chunking Algorithm**
+#### **Stage 2: Intelligent Content Chunking**
 
 The system employs an advanced chunking algorithm that maintains semantic coherence:
 
-````typescript
+```typescript
 private splitContentIntoChunks(content: string): string[] {
-  const maxChunkSize = 1000;
+  // Split by double newlines to preserve paragraph structure
+  const paragraphs = content.split(/\n\s*\n/);
   const chunks: string[] = [];
+  let currentChunk = "";
 
-  // Semantic boundary detection using NLP-inspired patterns
-  const semanticBoundaries = [
-    /(?=^#{1,6}\s)/m,           // Markdown headers
-    /(?=^[-*+]\s)/m,            // List items
-    /(?=^>\s)/m,                // Blockquotes
-    /(?=^```)/m,                // Code blocks
-    /(?<=\.)\s+(?=[A-Z])/g,     // Sentence boundaries
-    /(?<=!)\s+(?=[A-Z])/g,      // Exclamation boundaries
-    /(?<=\?)\s+(?=[A-Z])/g      // Question boundaries
-  ];
-
-  // Multi-level segmentation with context preservation
-  const sections = this.multiLevelSplit(content, semanticBoundaries);
-
-  for (const section of sections) {
-    if (section.length <= maxChunkSize) {
-      chunks.push(section);
+  for (const paragraph of paragraphs) {
+    if ((currentChunk + paragraph).length > 2000) {
+      if (currentChunk) {
+        chunks.push(currentChunk.trim());
+        currentChunk = paragraph;
+      } else {
+        // Single paragraph is too long, split by sentences
+        const sentences = paragraph.split(/(?<=[.!?])\s+/);
+        chunks.push(...sentences);
+      }
     } else {
-      // Intelligent sub-segmentation with context window
-      const subChunks = this.contextAwareSubSplit(section, maxChunkSize);
-      chunks.push(...subChunks);
+      currentChunk += (currentChunk ? "\n\n" : "") + paragraph;
     }
+  }
+
+  if (currentChunk.trim()) {
+    chunks.push(currentChunk.trim());
   }
 
   return chunks;
 }
-````
+```
 
-#### **Stage 3: Translation Context Preservation**
+#### **Stage 3: Translation Processing**
 
-The system maintains translation context across chunks to ensure consistency:
+The system processes content through Lingo.dev with error handling:
 
 ```typescript
-private async translateWithContext(
-  chunks: string[],
-  targetLanguage: string,
-  contextBuffer: string[]
-): Promise<string[]> {
-  const translatedChunks: string[] = [];
+private async translateMarkdown(
+  markdown: string,
+  targetLanguage: string
+): Promise<string> {
+  try {
+    // Split content into chunks to handle large files
+    const chunks = this.splitContentIntoChunks(markdown);
+    const translatedChunks: string[] = [];
 
-  for (let i = 0; i < chunks.length; i++) {
-    const chunk = chunks[i];
-    const context = this.buildContextWindow(chunks, i, contextBuffer);
+    for (const chunk of chunks) {
+      if (chunk.trim()) {
+        const translated = await this.lingo.localizeText(chunk, {
+          sourceLocale: this.config.sourceLocale,
+          targetLocale: targetLanguage,
+        });
+        translatedChunks.push(translated);
+      } else {
+        translatedChunks.push(chunk);
+      }
+    }
 
-    const translation = await this.lingo.localizeText(chunk, {
-      sourceLocale: 'en',
-      targetLocale: targetLanguage,
-      context: context,
-      preserveFormatting: true,
-      maintainTerminology: true
-    });
-
-    translatedChunks.push(translation);
-    this.updateContextBuffer(contextBuffer, chunk, translation);
+    return translatedChunks.join("\n\n");
+  } catch (error) {
+    console.error(
+      chalk.yellow(
+        `Warning: Translation failed for chunk, using original: ${error}`
+      )
+    );
+    return markdown;
   }
-
-  return translatedChunks;
 }
 ```
 
 ### Advanced Translation Features
 
-#### **Terminology Management**
+#### **Frontmatter Processing**
 
-The system implements a sophisticated terminology management system that ensures consistent translation of technical terms:
+The system intelligently handles frontmatter during translation:
 
 ```typescript
-private terminologyMap: Map<string, Map<string, string>> = new Map();
-
-private async buildTerminologyContext(
-  sourceLanguage: string,
+private updateFrontmatter(
+  frontmatter: string,
   targetLanguage: string
-): Promise<string> {
-  const terms = this.terminologyMap.get(`${sourceLanguage}-${targetLanguage}`) || new Map();
+): string {
+  // Add or update language information in frontmatter
+  const langLine = `lang: ${targetLanguage}`;
 
-  return Array.from(terms.entries())
-    .map(([source, target]) => `${source} → ${target}`)
-    .join('\n');
+  if (frontmatter.includes("lang:")) {
+    // Replace existing lang line
+    return frontmatter.replace(/lang:\s*\w+/g, langLine);
+  } else {
+    // Add lang line at the beginning
+    return frontmatter ? `${langLine}\n${frontmatter}` : langLine;
+  }
 }
 ```
 
-#### **Cultural Adaptation Engine**
+#### **File Reconstruction**
 
-The translation system includes cultural adaptation capabilities:
+The system reconstructs translated files with proper formatting:
 
 ```typescript
-private async adaptForCulture(
+private reconstructFile(frontmatter: string, markdown: string): string {
+  if (frontmatter) {
+    return `---\n${frontmatter}\n---\n\n${markdown}`;
+  }
+  return markdown;
+}
+```
+
+#### **Content Translation Pipeline**
+
+The complete translation pipeline processes content efficiently:
+
+```typescript
+private async translateContent(
   content: string,
   targetLanguage: string
 ): Promise<string> {
-  const culturalContext = this.getCulturalContext(targetLanguage);
+  // Parse frontmatter and content
+  const { frontmatter, markdown } = this.parseFrontmatter(content);
 
-  // Adapt date formats, number formats, and cultural references
-  return content
-    .replace(/\b\d{1,2}\/\d{1,2}\/\d{4}\b/g, (match) =>
-      this.adaptDateFormat(match, culturalContext.dateFormat)
-    )
-    .replace(/\b\d{1,3}(,\d{3})*\b/g, (match) =>
-      this.adaptNumberFormat(match, culturalContext.numberFormat)
-    );
-}
-```
+  // Translate the markdown content
+  const translatedMarkdown = await this.translateMarkdown(
+    markdown,
+    targetLanguage
+  );
 
-#### **Quality Assurance Pipeline**
+  // Update frontmatter with language info
+  const updatedFrontmatter = this.updateFrontmatter(
+    frontmatter,
+    targetLanguage
+  );
 
-The system implements a multi-layered quality assurance process:
-
-```typescript
-private async validateTranslation(
-  original: string,
-  translated: string,
-  targetLanguage: string
-): Promise<TranslationValidation> {
-  return {
-    completeness: this.checkCompleteness(original, translated),
-    terminology: this.validateTerminology(original, translated, targetLanguage),
-    formatting: this.validateFormatting(original, translated),
-    culturalSensitivity: await this.checkCulturalSensitivity(translated, targetLanguage),
-    technicalAccuracy: this.validateTechnicalTerms(original, translated)
-  };
+  // Reconstruct the file
+  return this.reconstructFile(updatedFrontmatter, translatedMarkdown);
 }
 ```
 
 ### Performance Optimization & Scalability
 
-#### **Intelligent Caching Strategy**
+#### **File Processing Optimization**
 
-The system implements a sophisticated caching mechanism:
+The system implements efficient file processing with intelligent filtering:
 
 ```typescript
-private async getCachedTranslation(
-  content: string,
-  targetLanguage: string
-): Promise<string | null> {
-  const contentHash = this.generateContentHash(content);
-  const cacheKey = `${contentHash}-${targetLanguage}`;
-
-  // Multi-level cache: memory → disk → distributed
-  const cached = this.translationCache.get(cacheKey) ||
-                 await this.diskCache.get(cacheKey) ||
-                 await this.distributedCache.get(cacheKey);
-
-  return cached || null;
+private shouldTranslateFile(filePath: string): boolean {
+  return filePath.endsWith(".mdx") || filePath.endsWith(".md");
 }
 ```
 
-#### **Batch Processing Optimization**
+#### **Batch Processing Strategy**
 
-Advanced batch processing with intelligent grouping:
+Advanced batch processing with progress tracking:
 
 ```typescript
-private async processBatchOptimized(
-  files: string[],
-  targetLanguages: string[]
+private async translateAllFiles(
+  sourceDir: string,
+  targetDir: string
 ): Promise<void> {
-  // Group by similarity for better translation quality
-  const similarityGroups = this.groupBySimilarity(files);
+  const files = await this.getAllFiles(sourceDir);
+  const totalFiles = files.length * this.config.languages.length;
 
-  for (const group of similarityGroups) {
-    // Process similar content together for consistency
-    const batchPromises = targetLanguages.map(lang =>
-      this.translateBatch(group, lang)
-    );
+  let completedTranslations = 0;
+  let failedTranslations = 0;
 
-    await Promise.allSettled(batchPromises);
+  for (const filePath of files) {
+    const relativePath = filePath.replace(sourceDir, "").replace(/^\//, "");
+
+    for (const language of this.config.languages) {
+      try {
+        await this.translateFile(filePath, targetDir, language, relativePath);
+        completedTranslations++;
+
+        // Show progress
+        const progress = Math.round((completedTranslations / totalFiles) * 100);
+        process.stdout.write(
+          `\r${chalk.cyan(`Progress: ${progress}% (${completedTranslations}/${totalFiles})`)}`
+        );
+      } catch (error) {
+        failedTranslations++;
+        console.error(
+          chalk.red(`\n❌ Failed to translate ${relativePath} to ${language}: ${error}`)
+        );
+      }
+    }
   }
 }
 ```
 
-#### **Real-time Progress Monitoring**
+#### **Directory Structure Management**
 
-Advanced progress tracking with detailed metrics:
+Efficient directory creation and file organization:
 
 ```typescript
-private async trackTranslationProgress(
-  totalFiles: number,
-  totalLanguages: number
-): Promise<ProgressTracker> {
-  const tracker = new ProgressTracker({
-    totalOperations: totalFiles * totalLanguages,
-    updateInterval: 1000,
-    metrics: ['speed', 'quality', 'errors', 'cache_hits']
-  });
+private async createTargetStructure(targetDir: string): Promise<void> {
+  // Create main target directory
+  await mkdir(targetDir, { recursive: true });
 
-  return tracker;
+  // Create language subdirectories (no 'en' directory needed)
+  for (const language of this.config.languages) {
+    const langDir = join(targetDir, language);
+    await mkdir(langDir, { recursive: true });
+  }
 }
 ```
 
 ### Error Handling & Resilience
 
-#### **Graceful Degradation**
+#### **Connection Testing & Validation**
 
-The system implements sophisticated error handling with graceful degradation:
+The system implements robust error handling with connection validation:
 
 ```typescript
-private async handleTranslationError(
-  error: TranslationError,
-  content: string,
+private async testConnection(): Promise<void> {
+  try {
+    await this.lingo.localizeText("Hello world", {
+      sourceLocale: "en",
+      targetLocale: "es",
+    });
+  } catch (error) {
+    throw new Error(`Failed to connect to Lingo.dev: ${error}`);
+  }
+}
+```
+
+#### **Graceful Error Handling**
+
+The system handles translation failures gracefully:
+
+```typescript
+private async translateMarkdown(
+  markdown: string,
   targetLanguage: string
 ): Promise<string> {
-  switch (error.type) {
-    case 'API_RATE_LIMIT':
-      return await this.retryWithBackoff(content, targetLanguage);
-    case 'CONTENT_TOO_LARGE':
-      return await this.splitAndRetry(content, targetLanguage);
-    case 'UNSUPPORTED_LANGUAGE':
-      return await this.fallbackTranslation(content, targetLanguage);
-    case 'NETWORK_ERROR':
-      return await this.offlineTranslation(content, targetLanguage);
-    default:
-      return this.generateFallbackContent(content, targetLanguage);
+  try {
+    // Translation logic here
+    const translated = await this.lingo.localizeText(chunk, {
+      sourceLocale: this.config.sourceLocale,
+      targetLocale: targetLanguage,
+    });
+    return translated;
+  } catch (error) {
+    console.error(
+      chalk.yellow(
+        `Warning: Translation failed for chunk, using original: ${error}`
+      )
+    );
+    return markdown; // Fallback to original content
   }
 }
 ```
 
 ### Integration with Documentation Pipeline
 
-The translation system seamlessly integrates with the documentation generation pipeline:
+The translation system seamlessly integrates with the documentation generation pipeline through the main translation method:
 
 ```typescript
-private async integrateWithDocumentationPipeline(
+async translateDocumentation(
   sourceDir: string,
   targetDir: string
 ): Promise<void> {
-  // Maintain documentation structure across languages
-  await this.preserveDocumentationStructure(sourceDir, targetDir);
+  const translationSpinner = ora({
+    text: "Initializing translation process...",
+    color: "blue",
+    spinner: "dots",
+  }).start();
 
-  // Update navigation and search indices
-  await this.updateNavigationIndices(targetDir);
+  try {
+    // Test Lingo.dev connection
+    await this.testConnection();
+    translationSpinner.succeed("Translation service connected successfully");
 
-  // Generate language-specific metadata
-  await this.generateLanguageMetadata(targetDir);
+    // Create target directory structure
+    await this.createTargetStructure(targetDir);
 
-  // Validate cross-language consistency
-  await this.validateCrossLanguageConsistency(sourceDir, targetDir);
+    // Translate all files
+    await this.translateAllFiles(sourceDir, targetDir);
+
+    console.log(
+      chalk.green(
+        `✅ Documentation translated to ${this.config.languages.length} languages`
+      )
+    );
+  } catch (error) {
+    translationSpinner.fail("Translation failed");
+    console.error(chalk.red(`❌ Translation error: ${error}`));
+    throw error;
+  }
 }
 ```
 
