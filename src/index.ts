@@ -13,7 +13,7 @@ import {
 import { checkValidNodeProject } from "./core/fileUtils.js";
 
 // Hard-coded version
-const version = "1.0.30";
+const version = "1.0.31";
 
 const argv = typeof Bun !== "undefined" ? Bun.argv : process.argv;
 

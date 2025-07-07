@@ -185,6 +185,17 @@ export async function generateSidebarConfigWithAI(
 ): Promise<any[]> {
   const sidebar: any[] = [];
 
+  // Add getting started page at the top
+  sidebar.push({
+    label: "Getting Started",
+    items: [
+      {
+        label: "Introduction",
+        link: "/getting-started/",
+      },
+    ],
+  });
+
   for (const [category, files] of Object.entries(grouped)) {
     if (files.length === 0) continue;
 

@@ -16,7 +16,10 @@ import {
   getUniqueFileName,
   filterEmptyCategories,
 } from "./fileUtils.js";
-import { generateIndexMdx } from "./indexGenerator.js";
+import {
+  generateIndexMdx,
+  generateGettingStartedMdx,
+} from "./indexGenerator.js";
 import {
   createAstroProject,
   generateAstroConfig,
@@ -32,11 +35,7 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 async function loadConfig() {
   try {
     // Try relative path first (more reliable on Windows)
-    let relativeConfigPath = "./zen.config.mjs";
-
-    if (process.platform === "win32") {
-      relativeConfigPath = ".\\zen.config.mjs";
-    }
+    let relativeConfigPath = join(".", "zen.config.mjs");
 
     const absoluteConfigPath = join(process.cwd(), "zen.config.mjs");
 
@@ -254,6 +253,22 @@ export async function generateDocs(fileInfos: FileInfo[]): Promise<void> {
   const indexPath = join(tempDir, "content", "docs", "index.mdx");
   await writeFile(indexPath, indexContent, "utf-8");
   mainIndexSpinner.succeed("Main index file generated");
+
+  // Generate getting started page
+  const gettingStartedSpinner = ora({
+    text: "Generating getting started page...",
+    color: "green",
+    spinner: "dots",
+  }).start();
+  const gettingStartedContent = generateGettingStartedMdx(
+    nonEmptyGrouped,
+    config
+  );
+  const gettingStartedDir = join(tempDir, "content", "docs", "getting-started");
+  await mkdir(gettingStartedDir, { recursive: true });
+  const gettingStartedPath = join(gettingStartedDir, "index.md");
+  await writeFile(gettingStartedPath, gettingStartedContent, "utf-8");
+  gettingStartedSpinner.succeed("Getting started page generated");
 
   // Handle translations if enabled (before moving to final location)
   console.log(chalk.blue(`🔧 Translation config check:`));
