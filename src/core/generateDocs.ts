@@ -1,7 +1,6 @@
-import { writeFile, mkdir, readFile } from "fs/promises";
+import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
-import { existsSync } from "fs";
-import { fileURLToPath, pathToFileURL } from "url";
+import { loadConfig } from "../utils/loadConfig.ts";
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import type { FileInfo } from "./fileRead.js";
@@ -29,86 +28,6 @@ import {
 import { DocumentationTranslator } from "./translation.js";
 import { loadEnvFile } from "../utils/loadenv.ts";
 
-// Utility function to add a small delay for better UX
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-// Load config function
-async function loadConfig() {
-  try {
-    // Try relative path first (more reliable on Windows)
-    let relativeConfigPath = join(".", "zen.config.mjs");
-
-    const absoluteConfigPath = join(process.cwd(), "zen.config.mjs");
-
-    let configPath = relativeConfigPath;
-    let config;
-
-    // Check if relative path exists
-    if (existsSync(relativeConfigPath)) {
-      const configSpinner = ora(
-        `Loading config from relative path: ${relativeConfigPath}`
-      ).start();
-      try {
-        config = (await import(relativeConfigPath)).default;
-        configSpinner.succeed(`Config loaded from: ${relativeConfigPath}`);
-      } catch (relativeError) {
-        configSpinner.warn(`Relative path failed, trying absolute path...`);
-        configPath = absoluteConfigPath;
-        // Convert absolute path to file URL for Windows compatibility
-        const fileUrl = pathToFileURL(absoluteConfigPath).href;
-        config = (await import(fileUrl)).default;
-        configSpinner.succeed(`Config loaded from: ${absoluteConfigPath}`);
-      }
-    } else if (existsSync(absoluteConfigPath)) {
-      const configSpinner = ora(
-        `Loading config from absolute path: ${absoluteConfigPath}`
-      ).start();
-      configPath = absoluteConfigPath;
-      // Convert absolute path to file URL for Windows compatibility
-      const fileUrl = pathToFileURL(absoluteConfigPath).href;
-      config = (await import(fileUrl)).default;
-      configSpinner.succeed(`Config loaded from: ${absoluteConfigPath}`);
-    } else {
-      const configSpinner = ora("Looking for configuration file...").fail(
-        "Configuration file not found"
-      );
-      console.error(chalk.red(`❌ Error: zen.config.mjs not found at:`));
-      console.error(chalk.gray(`   Relative: ${relativeConfigPath}`));
-      console.error(chalk.gray(`   Absolute: ${absoluteConfigPath}`));
-      console.error(
-        chalk.yellow(
-          "Please run 'zen-doc@latest init' to create a configuration file."
-        )
-      );
-      process.exit(1);
-    }
-
-    if (!config) {
-      throw new Error("Config file exists but has no default export");
-    }
-
-    return config;
-  } catch (error) {
-    console.error(chalk.red(`❌ Error loading zen.config.mjs: ${error}`));
-    console.error(
-      chalk.yellow(
-        "Please ensure the config file exists and has a valid default export."
-      )
-    );
-    console.error(chalk.gray("Example config structure:"));
-    console.error(
-      chalk.gray(`
-    export default {
-      projectName: "Your Project",
-      outputDir: "docs",
-      apiKey: "your-api-key",
-      author: "Your Name"
-    };
-          `)
-    );
-    process.exit(1);
-  }
-}
 
 export async function generateDocs(fileInfos: FileInfo[]): Promise<void> {
   const config = await loadConfig();
