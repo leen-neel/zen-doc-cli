@@ -13,7 +13,7 @@ import {
 import { checkValidNodeProject } from "./core/fileUtils.js";
 
 // Hard-coded version
-const version = "1.0.33";
+const version = "1.0.34";
 
 const argv = typeof Bun !== "undefined" ? Bun.argv : process.argv;
 
@@ -146,9 +146,9 @@ yargs(hideBin(argv))
           const icon = count > 0 ? "📁" : "📄";
           console.log(
             chalk.blueBright(`  ${icon} `) +
-            chalk.bold(`${category.padEnd(12)}`) +
-            chalk.whiteBright(": ") +
-            chalk.greenBright.bold(`${count} files`)
+              chalk.bold(`${category.padEnd(12)}`) +
+              chalk.whiteBright(": ") +
+              chalk.greenBright.bold(`${count} files`)
           );
         });
         console.log();
