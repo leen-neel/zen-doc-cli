@@ -46,6 +46,7 @@
     "lingo.dev": "^0.105.3",
     "ora": "^8.2.0",
     "prompts": "^2.4.2",
+    "rimraf": "^6.0.1",
     "tsx": "^4.0.0",
     "yaml": "^2.8.0",
     "yargs": "^18.0.0"
@@ -56,6 +57,9 @@
   "scripts": {
     "prepare": "echo 'Package prepared for distribution'",
     "clean": "rm -rf dist",
-    "build": "npm run clean && tsup"
+    "clean:win": "rimraf dist",
+    "build": "npm run clean && tsup",
+    "build:win": "npm run clean:win && tsup",
+    "dev": "tsup src/index.ts --watch"
   }
 }

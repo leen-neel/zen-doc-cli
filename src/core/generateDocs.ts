@@ -1,7 +1,6 @@
-import { writeFile, mkdir, readFile } from "fs/promises";
+import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
-import { existsSync } from "fs";
-import { fileURLToPath, pathToFileURL } from "url";
+import { loadConfig } from "../utils/loadConfig.ts";
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import type { FileInfo } from "./fileRead.js";
@@ -27,99 +26,21 @@ import {
   generateCategoryIndexes,
 } from "./astroGenerator.js";
 import { DocumentationTranslator } from "./translation.js";
+import { loadEnvFile } from "../utils/loadenv.ts";
 
-// Utility function to add a small delay for better UX
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-// Load config function
-async function loadConfig() {
-  try {
-    // Try relative path first (more reliable on Windows)
-    let relativeConfigPath = join(".", "zen.config.mjs");
-
-    const absoluteConfigPath = join(process.cwd(), "zen.config.mjs");
-
-    let configPath = relativeConfigPath;
-    let config;
-
-    // Check if relative path exists
-    if (existsSync(relativeConfigPath)) {
-      const configSpinner = ora(
-        `Loading config from relative path: ${relativeConfigPath}`
-      ).start();
-      try {
-        config = (await import(relativeConfigPath)).default;
-        configSpinner.succeed(`Config loaded from: ${relativeConfigPath}`);
-      } catch (relativeError) {
-        configSpinner.warn(`Relative path failed, trying absolute path...`);
-        configPath = absoluteConfigPath;
-        // Convert absolute path to file URL for Windows compatibility
-        const fileUrl = pathToFileURL(absoluteConfigPath).href;
-        config = (await import(fileUrl)).default;
-        configSpinner.succeed(`Config loaded from: ${absoluteConfigPath}`);
-      }
-    } else if (existsSync(absoluteConfigPath)) {
-      const configSpinner = ora(
-        `Loading config from absolute path: ${absoluteConfigPath}`
-      ).start();
-      configPath = absoluteConfigPath;
-      // Convert absolute path to file URL for Windows compatibility
-      const fileUrl = pathToFileURL(absoluteConfigPath).href;
-      config = (await import(fileUrl)).default;
-      configSpinner.succeed(`Config loaded from: ${absoluteConfigPath}`);
-    } else {
-      const configSpinner = ora("Looking for configuration file...").fail(
-        "Configuration file not found"
-      );
-      console.error(chalk.red(`❌ Error: zen.config.mjs not found at:`));
-      console.error(chalk.gray(`   Relative: ${relativeConfigPath}`));
-      console.error(chalk.gray(`   Absolute: ${absoluteConfigPath}`));
-      console.error(
-        chalk.yellow(
-          "Please run 'zen-doc init' to create a configuration file."
-        )
-      );
-      process.exit(1);
-    }
-
-    if (!config) {
-      throw new Error("Config file exists but has no default export");
-    }
-
-    return config;
-  } catch (error) {
-    console.error(chalk.red(`❌ Error loading zen.config.mjs: ${error}`));
-    console.error(
-      chalk.yellow(
-        "Please ensure the config file exists and has a valid default export."
-      )
-    );
-    console.error(chalk.gray("Example config structure:"));
-    console.error(
-      chalk.gray(`
-    export default {
-      projectName: "Your Project",
-      outputDir: "docs",
-      apiKey: "your-api-key",
-      author: "Your Name"
-    };
-          `)
-    );
-    process.exit(1);
-  }
-}
 
 export async function generateDocs(fileInfos: FileInfo[]): Promise<void> {
   const config = await loadConfig();
   const outputDir = `./${config.outputDir}`;
   const tempDir = `./temp-zen-docs-${Date.now()}`;
   const baseDir = `${tempDir}/content/docs`;
+  const { googleApiKey, lingoApiKey } = loadEnvFile();
 
   // Suppress any potential AI SDK logging
   process.env.AI_SDK_DEBUG = "false";
 
   // Validate API key is available
-  if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+  if (googleApiKey === undefined) {
     console.error(
       chalk.red(
         "❌ Error: GOOGLE_GENERATIVE_AI_API_KEY environment variable is not set"
@@ -129,7 +50,7 @@ export async function generateDocs(fileInfos: FileInfo[]): Promise<void> {
       chalk.yellow("Please set your Google Gemini API key in your .env file:")
     );
     console.error(
-      chalk.gray("   GOOGLE_GENERATIVE_AI_API_KEY=your_api_key_here")
+      chalk.gray("GOOGLE_GENERATIVE_AI_API_KEY=your_api_key_here")
     );
     process.exit(1);
   }
@@ -206,14 +127,14 @@ export async function generateDocs(fileInfos: FileInfo[]): Promise<void> {
           // Print a simple line for each file
           console.log(
             chalk.greenBright.bold("  ✔ ") +
-              chalk.whiteBright("Generated: ") +
-              chalk.cyanBright(fileName)
+            chalk.whiteBright("Generated: ") +
+            chalk.cyanBright(fileName)
           );
         } catch (error) {
           console.log(
             chalk.redBright.bold("  ✖ ") +
-              chalk.whiteBright("Failed to process: ") +
-              chalk.yellowBright(file.fileName)
+            chalk.whiteBright("Failed to process: ") +
+            chalk.yellowBright(file.fileName)
           );
           console.error(
             chalk.bgRed.white.bold(" ERROR "),
@@ -315,7 +236,7 @@ export async function generateDocs(fileInfos: FileInfo[]): Promise<void> {
   );
   console.log(
     chalk.blueBright.bold("📁 Output directory: ") +
-      chalk.whiteBright.bold(`${outputDir}`)
+    chalk.whiteBright.bold(`${outputDir}`)
   );
 
   console.log(chalk.gray.bold(`\ncd ${outputDir}\nnpm run dev\n`));
