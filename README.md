@@ -1,7 +1,7 @@
 # ZenDoc - Code Documentation in Minutes
 
 <p align="center">
-  <img src="/assets/logo.png" width="200" alt="Zen Doc Logo" />
+  <img src="https://github.com/leen-neel/zen-doc-cli/blob/master/assets/logo.png?raw=true" width="200" alt="Zen Doc Logo" />
 </p>
 
 <p align="center">

@@ -1,6 +1,6 @@
 {
   "name": "zen-doc",
-  "version": "1.0.34",
+  "version": "1.0.35",
   "description": "Your codebase documentation, in a matter of minutes",
   "main": "dist/index.js",
   "module": "dist/index.js",
