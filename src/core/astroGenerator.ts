@@ -217,9 +217,9 @@ export async function generateSidebarConfigWithAI(
             prompt = `Given the following file path and code, generate a short, human-friendly label for a documentation sidebar. Do not use any sort of bold, italic, or other formatting. File path: ${file.relativePath}\nCode:\n\n${snippet}\n\nLabel:`;
           }
           const result = await generateText({
-            model: google("gemini-2.0-flash"),
+            model: google("gemini-3.1-flash-lite-preview"),
             prompt,
-            maxTokens: 30,
+            maxOutputTokens: 30,
             temperature: 0.2,
           });
           label = result.text.trim().replace(/^"|"$/g, "");

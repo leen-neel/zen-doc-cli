@@ -28,8 +28,19 @@ export function loadEnvFile(): {
     }
   }
 
+  // Prefer GENERATIVE_AI_API_KEY when both exist — older GOOGLE_* keys
+  // are often stale while AI Studio issues AQ.* keys under the alias.
+  const googleApiKey =
+    process.env.GENERATIVE_AI_API_KEY ||
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+
+  // AI SDK reads GOOGLE_GENERATIVE_AI_API_KEY; keep it in sync with the chosen key.
+  if (googleApiKey) {
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = googleApiKey;
+  }
+
   return {
-    googleApiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+    googleApiKey,
     lingoApiKey: process.env.LINGO_API_KEY,
   };
 }

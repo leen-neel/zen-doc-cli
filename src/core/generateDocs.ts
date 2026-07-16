@@ -28,7 +28,6 @@ import {
 import { DocumentationTranslator } from "./translation.js";
 import { loadEnvFile } from "../utils/loadenv.ts";
 
-
 export async function generateDocs(fileInfos: FileInfo[]): Promise<void> {
   const config = await loadConfig();
   const outputDir = `./${config.outputDir}`;
@@ -49,9 +48,7 @@ export async function generateDocs(fileInfos: FileInfo[]): Promise<void> {
     console.error(
       chalk.yellow("Please set your Google Gemini API key in your .env file:")
     );
-    console.error(
-      chalk.gray("GOOGLE_GENERATIVE_AI_API_KEY=your_api_key_here")
-    );
+    console.error(chalk.gray("GOOGLE_GENERATIVE_AI_API_KEY=your_api_key_here"));
     process.exit(1);
   }
 
@@ -72,9 +69,9 @@ export async function generateDocs(fileInfos: FileInfo[]): Promise<void> {
   }).start();
   try {
     const testResult = await generateText({
-      model: google("gemini-2.0-flash"),
+      model: google("gemini-3.1-flash-lite-preview"),
       prompt: "Say 'Hello, AI is working!'",
-      maxTokens: 50,
+      maxOutputTokens: 50,
     });
     aiSpinner.succeed("AI connection successful");
   } catch (error) {
@@ -127,14 +124,14 @@ export async function generateDocs(fileInfos: FileInfo[]): Promise<void> {
           // Print a simple line for each file
           console.log(
             chalk.greenBright.bold("  ✔ ") +
-            chalk.whiteBright("Generated: ") +
-            chalk.cyanBright(fileName)
+              chalk.whiteBright("Generated: ") +
+              chalk.cyanBright(fileName)
           );
         } catch (error) {
           console.log(
             chalk.redBright.bold("  ✖ ") +
-            chalk.whiteBright("Failed to process: ") +
-            chalk.yellowBright(file.fileName)
+              chalk.whiteBright("Failed to process: ") +
+              chalk.yellowBright(file.fileName)
           );
           console.error(
             chalk.bgRed.white.bold(" ERROR "),
@@ -236,7 +233,7 @@ export async function generateDocs(fileInfos: FileInfo[]): Promise<void> {
   );
   console.log(
     chalk.blueBright.bold("📁 Output directory: ") +
-    chalk.whiteBright.bold(`${outputDir}`)
+      chalk.whiteBright.bold(`${outputDir}`)
   );
 
   console.log(chalk.gray.bold(`\ncd ${outputDir}\nnpm run dev\n`));
@@ -252,9 +249,9 @@ async function generateFileDoc(
   try {
     // Use Google Gemini to generate documentation
     const result = await generateText({
-      model: google("gemini-2.0-flash"),
+      model: google("gemini-3.1-flash-lite-preview"),
       prompt: prompt,
-      maxTokens: 4000,
+      maxOutputTokens: 4000,
       temperature: 0.3,
     });
 
